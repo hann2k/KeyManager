@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\KeyManager.Protocol\KeyManager.Protocol.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Named Pipe ACL(PipeSecurity) 및 클라 PID 조회를 위해 Windows 타깃 -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

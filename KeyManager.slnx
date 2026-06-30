@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/KeyManager.SampleClient/KeyManager.SampleClient.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/KeyManager.App/KeyManager.App.csproj" />
+    <Project Path="src/KeyManager.Client/KeyManager.Client.csproj" />
+    <Project Path="src/KeyManager.Core/KeyManager.Core.csproj" />
+    <Project Path="src/KeyManager.Protocol/KeyManager.Protocol.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KeyManager.Core.Tests/KeyManager.Core.Tests.csproj" />
+  </Folder>
+</Solution>

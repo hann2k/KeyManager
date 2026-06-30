@@ -1,0 +1,10 @@
+# Claude 작업 디렉터리
+.claude/
+
+# 빌드 산출물 (release/ 는 커밋 대상이므로 제외하지 않음)
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio 사용자 설정
+.vs/
+*.user
