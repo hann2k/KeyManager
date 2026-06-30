@@ -1,7 +1,7 @@
 # KeyManager
 
 로컬 시크릿 브로커. API 키 등 비밀 데이터를 암호화 저장하고, 인가된 로컬 앱이
-Named Pipe로 질의하면 해당 값만 안전하게 배급한다. 설계 근거는 [개발목적.md](개발목적.md) 참고.
+Named Pipe로 질의하면 해당 값만 안전하게 배급한다. 설계 근거는 [docs/개발목적.md](docs/개발목적.md) 참고.
 
 ## 구조
 
@@ -111,4 +111,4 @@ var opt  = cfg.GetSection("LsOpenApi").Get<LsOpenApiOptions>();
 ## 1단계(MVP) 범위
 
 로컬 전용. 클라우드 sync(zero-knowledge 하이브리드)·백업/복구·Argon2id 교체는 2단계 예정
-(개발목적.md §11, §15).
+(docs/개발목적.md §11, §15).

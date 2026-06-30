@@ -46,6 +46,10 @@ internal sealed class TrayContext : ApplicationContext
         if (!Initialized) { _icon.Visible = false; return; }
 
         UpdateState();
+
+        // 시작 시 해제까지 마쳤으면 관리 창을 바로 띄운다(트레이에만 들어가 보이지 않던 혼동 방지).
+        // 메시지 루프 시작 후 실행되도록 마샬링.
+        _marshal.BeginInvoke(new Action(ShowMain));
     }
 
     private bool InitializeVault()
