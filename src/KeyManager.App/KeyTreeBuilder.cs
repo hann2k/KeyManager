@@ -38,19 +38,12 @@ internal static class KeyTreeBuilder
             }
         }
 
-        // 마커·툴팁: 값을 가진 노드(실제 키)에 '●'. 그룹이기도 하면 둘 다 해당.
+        // 마커: 값을 가진 노드(실제 키)에 '●'. (툴팁/설명은 호출자가 설정)
         foreach (var (path, node) in byPath)
         {
             string seg = path.Contains(Sep) ? path[(path.LastIndexOf(Sep) + 1)..] : path;
             bool isKey = keySet.Contains(path);
-            bool isGroup = node.Nodes.Count > 0;
             node.Text = isKey ? KeyMarker + seg : seg;
-            node.ToolTipText = (isKey, isGroup) switch
-            {
-                (true, true) => "키이자 그룹 (값 있음 + 하위 있음)",
-                (true, false) => "키 (값 있음)",
-                _ => "그룹",
-            };
         }
 
         tv.ShowNodeToolTips = true;

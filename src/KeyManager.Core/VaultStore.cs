@@ -33,6 +33,7 @@ public sealed class VaultStore : IDisposable
     // unlock 동안만 유효한 캐시
     private Dictionary<string, VaultEntryRecord>? _entriesByName;
     private Dictionary<string, ClientRecord>? _clientsByName;
+    private Dictionary<string, GroupMetaRecord>? _groupMetaByPath;
 
     public TimeSpan AutoLockAfter { get; set; }
 
@@ -123,6 +124,7 @@ public sealed class VaultStore : IDisposable
             _kd = null;
             _entriesByName = null;
             _clientsByName = null;
+            _groupMetaByPath = null;
         }
         if (changed) StateChanged?.Invoke();
     }
@@ -150,6 +152,10 @@ public sealed class VaultStore : IDisposable
         _clientsByName = new Dictionary<string, ClientRecord>(StringComparer.Ordinal);
         foreach (var c in _file.Clients)
             _clientsByName[AeadBox.OpenString(kd, c.Name)] = c;
+
+        _groupMetaByPath = new Dictionary<string, GroupMetaRecord>(StringComparer.Ordinal);
+        foreach (var g in _file.Groups)
+            _groupMetaByPath[AeadBox.OpenString(kd, g.Path)] = g;
     }
 
     private byte[] RequireUnlocked()
@@ -236,7 +242,14 @@ public sealed class VaultStore : IDisposable
                 if (_entriesByName.Remove(n, out var rec))
                     _file.Entries.RemoveAll(e => e.Id == rec.Id);
             count = toRemove.Count;
-            if (count > 0) SaveFile(_file);
+
+            // 그룹 설명도 함께 정리(고아 방지)
+            var metaToRemove = _groupMetaByPath!.Keys.Where(p => KeyAccess.InGroup(prefix, p)).ToList();
+            foreach (var p in metaToRemove)
+                if (_groupMetaByPath.Remove(p, out var grec))
+                    _file.Groups.Remove(grec);
+
+            if (count > 0 || metaToRemove.Count > 0) SaveFile(_file);
         }
         if (count > 0) StateChanged?.Invoke();
         return count;
@@ -259,6 +272,75 @@ public sealed class VaultStore : IDisposable
             RequireUnlocked();
             return _entriesByName!.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
         }
+    }
+
+    // ---- 설명(description) ----------------------------------------------
+
+    public string? GetSecretDescription(string name)
+    {
+        lock (_gate)
+        {
+            byte[] kd = RequireUnlocked();
+            if (_entriesByName!.TryGetValue(name, out var rec) && rec.Description is not null)
+                return AeadBox.OpenString(kd, rec.Description);
+            return null;
+        }
+    }
+
+    public void SetSecretDescription(string name, string? description)
+    {
+        lock (_gate)
+        {
+            byte[] kd = RequireUnlocked();
+            Touch();
+            if (!_entriesByName!.TryGetValue(name, out var rec))
+                throw new InvalidOperationException($"존재하지 않는 키: {name}");
+            rec.Description = string.IsNullOrEmpty(description) ? null : AeadBox.SealString(kd, description);
+            rec.UpdatedAt = DateTimeOffset.UtcNow;
+            SaveFile(_file);
+        }
+        StateChanged?.Invoke();
+    }
+
+    public string? GetGroupDescription(string path)
+    {
+        lock (_gate)
+        {
+            byte[] kd = RequireUnlocked();
+            if (_groupMetaByPath!.TryGetValue(path, out var rec))
+                return AeadBox.OpenString(kd, rec.Description);
+            return null;
+        }
+    }
+
+    public void SetGroupDescription(string path, string? description)
+    {
+        lock (_gate)
+        {
+            byte[] kd = RequireUnlocked();
+            Touch();
+            if (string.IsNullOrEmpty(description))
+            {
+                if (_groupMetaByPath!.Remove(path, out var existing))
+                    _file.Groups.Remove(existing);
+            }
+            else if (_groupMetaByPath!.TryGetValue(path, out var rec))
+            {
+                rec.Description = AeadBox.SealString(kd, description);
+            }
+            else
+            {
+                var rec2 = new GroupMetaRecord
+                {
+                    Path = AeadBox.SealString(kd, path),
+                    Description = AeadBox.SealString(kd, description),
+                };
+                _file.Groups.Add(rec2);
+                _groupMetaByPath[path] = rec2;
+            }
+            SaveFile(_file);
+        }
+        StateChanged?.Invoke();
     }
 
     // ---- 소비 앱(클라이언트) --------------------------------------------

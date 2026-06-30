@@ -9,7 +9,8 @@ static class Program
         using var mutex = new Mutex(true, @"Local\KeyManager.SingleInstance", out bool isNew);
         if (!isNew)
         {
-            MessageBox.Show("KeyManager가 이미 실행 중입니다.", "KeyManager",
+            // 언어 결정 전이라 이중 언어로 표기.
+            MessageBox.Show("KeyManager is already running. / KeyManager가 이미 실행 중입니다.", "KeyManager",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }

@@ -12,7 +12,7 @@ internal sealed class MasterPasswordForm : Form
     public MasterPasswordForm(bool create)
     {
         _create = create;
-        Text = create ? "마스터 암호 설정" : "잠금 해제";
+        Text = Loc.T(create ? "mp.titleCreate" : "mp.titleUnlock");
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterScreen;
         MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
@@ -33,28 +33,26 @@ internal sealed class MasterPasswordForm : Form
 
         var info = new Label
         {
-            Text = create
-                ? "새 vault를 만듭니다. 마스터 암호를 정하세요.\n분실 시 복구할 수 없습니다."
-                : "마스터 암호를 입력하세요.",
+            Text = Loc.T(create ? "mp.infoCreate" : "mp.infoUnlock"),
             AutoSize = true,
             Margin = new Padding(3, 3, 3, 10),
         };
         grid.Controls.Add(info, 0, 0);
         grid.SetColumnSpan(info, 2);
 
-        grid.Controls.Add(new Label { Text = "암호:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 6, 6, 3) }, 0, 1);
+        grid.Controls.Add(new Label { Text = Loc.T("mp.password"), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 6, 6, 3) }, 0, 1);
         grid.Controls.Add(_pw, 1, 1);
 
         int buttonRow = 2;
         if (create)
         {
-            grid.Controls.Add(new Label { Text = "확인:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 6, 6, 3) }, 0, 2);
+            grid.Controls.Add(new Label { Text = Loc.T("mp.confirm"), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 6, 6, 3) }, 0, 2);
             grid.Controls.Add(_confirm, 1, 2);
             buttonRow = 3;
         }
 
-        var ok = new Button { Text = "확인", DialogResult = DialogResult.OK, AutoSize = true, MinimumSize = new Size(75, 0) };
-        var cancel = new Button { Text = "취소", DialogResult = DialogResult.Cancel, AutoSize = true, MinimumSize = new Size(75, 0) };
+        var ok = new Button { Text = Loc.T("ok"), DialogResult = DialogResult.OK, AutoSize = true, MinimumSize = new Size(75, 0) };
+        var cancel = new Button { Text = Loc.T("cancel"), DialogResult = DialogResult.Cancel, AutoSize = true, MinimumSize = new Size(75, 0) };
         ok.Click += OnOk;
 
         var buttons = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, AutoSize = true, Anchor = AnchorStyles.Right, Margin = new Padding(3, 10, 3, 3) };
@@ -72,13 +70,13 @@ internal sealed class MasterPasswordForm : Form
     {
         if (string.IsNullOrEmpty(_pw.Text))
         {
-            MessageBox.Show("암호를 입력하세요.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(Loc.T("mp.errEmpty"), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             DialogResult = DialogResult.None;
             return;
         }
         if (_create && _pw.Text != _confirm.Text)
         {
-            MessageBox.Show("확인 암호가 일치하지 않습니다.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(Loc.T("mp.errMismatch"), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             DialogResult = DialogResult.None;
         }
     }

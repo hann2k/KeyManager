@@ -2,25 +2,28 @@ using KeyManager.Core;
 
 namespace KeyManager.App;
 
-/// <summary>키·클라이언트 관리 UI. 목록엔 이름만 표시(설계 §12).</summary>
+/// <summary>키·클라이언트 관리 UI. 목록엔 이름만 표시(설계 §12). 언어는 Loc 기준으로 빌드된다.</summary>
 internal sealed class MainForm : Form
 {
     private readonly VaultStore _store;
+    private readonly Action<Lang> _onLanguageChange;
     private readonly TreeView _secretTree = new() { Dock = DockStyle.Fill, HideSelection = false };
     private readonly ListBox _clientList = new() { Dock = DockStyle.Fill, IntegralHeight = false };
 
-    public MainForm(VaultStore store)
+    public MainForm(VaultStore store, Action<Lang> onLanguageChange)
     {
         _store = store;
-        Text = "KeyManager";
+        _onLanguageChange = onLanguageChange;
+        Text = Loc.T("app.title");
         StartPosition = FormStartPosition.CenterScreen;
-        AutoScaleMode = AutoScaleMode.Font; // 고DPI 스케일
-        ClientSize = new Size(480, 420);
-        MinimumSize = new Size(400, 320);
+        AutoScaleMode = AutoScaleMode.Font;
+        ClientSize = new Size(480, 440);
+        MinimumSize = new Size(400, 340);
 
         var tabs = new TabControl { Dock = DockStyle.Fill };
         tabs.TabPages.Add(BuildSecretsTab());
         tabs.TabPages.Add(BuildClientsTab());
+        tabs.TabPages.Add(BuildLanguageTab());
         Controls.Add(tabs);
 
         RefreshSecrets();
@@ -29,7 +32,7 @@ internal sealed class MainForm : Form
 
     private TabPage BuildSecretsTab()
     {
-        var page = new TabPage("키");
+        var page = new TabPage(Loc.T("tab.keys"));
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3 };
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -37,25 +40,18 @@ internal sealed class MainForm : Form
 
         layout.Controls.Add(new Label
         {
-            Text = "●  = 값을 가진 키 (마커 없으면 그룹)",
+            Text = Loc.T("keys.legend"),
             Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, ForeColor = SystemColors.GrayText,
         }, 0, 0);
 
         layout.Controls.Add(_secretTree, 0, 1);
 
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(4), AutoSize = true };
-        var add = new Button { Text = "추가", AutoSize = true, MinimumSize = new Size(75, 0) };
-        var change = new Button { Text = "값 변경", AutoSize = true, MinimumSize = new Size(75, 0) };
-        var del = new Button { Text = "키 삭제", AutoSize = true, MinimumSize = new Size(75, 0) };
-        var delGroup = new Button { Text = "그룹 삭제", AutoSize = true, MinimumSize = new Size(80, 0) };
-        add.Click += (_, _) => AddSecret();
-        change.Click += (_, _) => ChangeSecret();
-        del.Click += (_, _) => DeleteSecret();
-        delGroup.Click += (_, _) => DeleteGroupSecrets();
-        buttons.Controls.Add(add);
-        buttons.Controls.Add(change);
-        buttons.Controls.Add(del);
-        buttons.Controls.Add(delGroup);
+        AddButton(buttons, Loc.T("btn.add"), AddSecret);
+        AddButton(buttons, Loc.T("btn.changeValue"), ChangeSecret);
+        AddButton(buttons, Loc.T("btn.description"), EditDescription);
+        AddButton(buttons, Loc.T("btn.deleteKey"), DeleteSecret);
+        AddButton(buttons, Loc.T("btn.deleteGroup"), DeleteGroupSecrets);
         layout.Controls.Add(buttons, 0, 2);
 
         page.Controls.Add(layout);
@@ -64,7 +60,7 @@ internal sealed class MainForm : Form
 
     private TabPage BuildClientsTab()
     {
-        var page = new TabPage("클라이언트");
+        var page = new TabPage(Loc.T("tab.clients"));
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
@@ -72,19 +68,38 @@ internal sealed class MainForm : Form
         layout.Controls.Add(_clientList, 0, 0);
 
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(4), AutoSize = true };
-        var add = new Button { Text = "등록", AutoSize = true, MinimumSize = new Size(75, 0) };
-        var edit = new Button { Text = "권한 편집", AutoSize = true, MinimumSize = new Size(75, 0) };
-        var del = new Button { Text = "삭제", AutoSize = true, MinimumSize = new Size(75, 0) };
-        add.Click += (_, _) => AddClient();
-        edit.Click += (_, _) => EditClient();
-        del.Click += (_, _) => DeleteClient();
-        buttons.Controls.Add(add);
-        buttons.Controls.Add(edit);
-        buttons.Controls.Add(del);
+        AddButton(buttons, Loc.T("btn.register"), AddClient);
+        AddButton(buttons, Loc.T("btn.editPerm"), EditClient);
+        AddButton(buttons, Loc.T("btn.delete"), DeleteClient);
         layout.Controls.Add(buttons, 0, 1);
 
         page.Controls.Add(layout);
         return page;
+    }
+
+    private TabPage BuildLanguageTab()
+    {
+        var page = new TabPage(Loc.T("tab.language"));
+        var layout = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, Padding = new Padding(12), WrapContents = false };
+
+        layout.Controls.Add(new Label { Text = Loc.T("langtab.info"), AutoSize = true, Margin = new Padding(3, 3, 3, 10) });
+
+        var en = new RadioButton { Text = Loc.T("lang.english"), AutoSize = true, Checked = Loc.Current == Lang.En, Margin = new Padding(3, 4, 3, 4) };
+        var ko = new RadioButton { Text = Loc.T("lang.korean"), AutoSize = true, Checked = Loc.Current == Lang.Ko, Margin = new Padding(3, 4, 3, 4) };
+        en.CheckedChanged += (_, _) => { if (en.Checked && Loc.Current != Lang.En) _onLanguageChange(Lang.En); };
+        ko.CheckedChanged += (_, _) => { if (ko.Checked && Loc.Current != Lang.Ko) _onLanguageChange(Lang.Ko); };
+        layout.Controls.Add(en);
+        layout.Controls.Add(ko);
+
+        page.Controls.Add(layout);
+        return page;
+    }
+
+    private static void AddButton(Control parent, string text, Action onClick)
+    {
+        var b = new Button { Text = text, AutoSize = true, MinimumSize = new Size(75, 0) };
+        b.Click += (_, _) => onClick();
+        parent.Controls.Add(b);
     }
 
     // ---- 키 ----
@@ -93,33 +108,48 @@ internal sealed class MainForm : Form
 
     private void RefreshSecrets()
     {
-        // 펼침/선택 상태 기억 후 재구성 → 복원.
         var expanded = KeyTreeBuilder.CaptureExpanded(_secretTree);
         var selected = _secretTree.SelectedNode?.Tag as string;
 
         _secretTree.Nodes.Clear();
         if (!_store.IsUnlocked) return;
 
-        KeyTreeBuilder.Populate(_secretTree, _store.ListSecretNames(), expandAll: !_secretsLoadedOnce);
+        var names = _store.ListSecretNames();
+        KeyTreeBuilder.Populate(_secretTree, names, expandAll: !_secretsLoadedOnce);
+        SetTooltips(_secretTree.Nodes, names.ToHashSet(StringComparer.Ordinal));
         if (_secretsLoadedOnce) KeyTreeBuilder.RestoreState(_secretTree, expanded, selected);
         _secretsLoadedOnce = true;
     }
 
-    /// <summary>선택 노드가 실제 키(값을 가짐)면 그 전체 이름, 아니면 null.</summary>
+    /// <summary>노드 툴팁에 설명을 표시(키 설명 / 그룹 설명).</summary>
+    private void SetTooltips(TreeNodeCollection coll, HashSet<string> keySet)
+    {
+        foreach (TreeNode n in coll)
+        {
+            string path = (string)n.Tag!;
+            string? desc = keySet.Contains(path) ? _store.GetSecretDescription(path) : _store.GetGroupDescription(path);
+            if (!string.IsNullOrEmpty(desc)) n.ToolTipText = desc;
+            SetTooltips(n.Nodes, keySet);
+        }
+    }
+
     private string? SelectedSecretName()
     {
         if (_secretTree.SelectedNode?.Tag is not string path) return null;
         return _store.ListSecretNames().Contains(path) ? path : null;
     }
 
-    /// <summary>선택 노드의 전체 경로(키든 그룹이든).</summary>
     private string? SelectedNodePath() => _secretTree.SelectedNode?.Tag as string;
 
     private void AddSecret()
     {
         using var f = new AddSecretForm();
         if (f.ShowDialog(this) != DialogResult.OK) return;
-        Guard(() => _store.AddOrUpdateSecret(f.SecretName, f.SecretValue));
+        Guard(() =>
+        {
+            _store.AddOrUpdateSecret(f.SecretName, f.SecretValue);
+            if (f.DescriptionText.Length > 0) _store.SetSecretDescription(f.SecretName, f.DescriptionText);
+        });
         RefreshSecrets();
     }
 
@@ -127,12 +157,36 @@ internal sealed class MainForm : Form
     {
         if (SelectedSecretName() is not string name)
         {
-            MessageBox.Show("값을 변경할 키(잎 항목)를 선택하세요.", "KeyManager", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(Loc.T("msg.selectLeafChange"), Loc.T("app.title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
-        using var f = new AddSecretForm(name);
+        string? current = _store.GetSecretDescription(name);
+        using var f = new AddSecretForm(name, current);
         if (f.ShowDialog(this) != DialogResult.OK) return;
-        Guard(() => _store.AddOrUpdateSecret(name, f.SecretValue));
+        Guard(() =>
+        {
+            _store.AddOrUpdateSecret(name, f.SecretValue);
+            _store.SetSecretDescription(name, f.DescriptionText);
+        });
+        RefreshSecrets();
+    }
+
+    private void EditDescription()
+    {
+        if (SelectedNodePath() is not string path)
+        {
+            MessageBox.Show(Loc.T("msg.selectNode"), Loc.T("app.title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        bool isKey = _store.ListSecretNames().Contains(path);
+        string? current = isKey ? _store.GetSecretDescription(path) : _store.GetGroupDescription(path);
+        using var f = new DescriptionForm(path, !isKey, current);
+        if (f.ShowDialog(this) != DialogResult.OK) return;
+        Guard(() =>
+        {
+            if (isKey) _store.SetSecretDescription(path, f.Description);
+            else _store.SetGroupDescription(path, f.Description);
+        });
         RefreshSecrets();
     }
 
@@ -140,10 +194,10 @@ internal sealed class MainForm : Form
     {
         if (SelectedSecretName() is not string name)
         {
-            MessageBox.Show("삭제할 키(잎 항목)를 선택하세요.", "KeyManager", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(Loc.T("msg.selectLeafDelete"), Loc.T("app.title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
-        if (MessageBox.Show($"'{name}' 키를 삭제할까요?", "삭제", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+        if (MessageBox.Show(Loc.T("confirm.deleteKey", name), Loc.T("title.delete"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             return;
         Guard(() => _store.DeleteSecret(name));
         RefreshSecrets();
@@ -153,12 +207,12 @@ internal sealed class MainForm : Form
     {
         if (SelectedNodePath() is not string prefix)
         {
-            MessageBox.Show("삭제할 그룹(또는 키)을 선택하세요.", "KeyManager", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(Loc.T("msg.selectGroup"), Loc.T("app.title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         int count = _store.CountGroup(prefix);
         if (count == 0) return;
-        if (MessageBox.Show($"'{prefix}' 그룹의 {count}개 키를 모두 삭제할까요?\n(하위 전체 포함)", "그룹 삭제",
+        if (MessageBox.Show(Loc.T("confirm.deleteGroup", prefix, count), Loc.T("title.deleteGroup"),
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
         Guard(() => _store.DeleteGroup(prefix));
@@ -194,14 +248,14 @@ internal sealed class MainForm : Form
         if (!_store.TryGetClient(name, out var view) || view is null) return;
         using var f = new AddClientForm(_store.ListSecretNames(), name, view.AllowedKeys);
         if (f.ShowDialog(this) != DialogResult.OK) return;
-        Guard(() => _store.UpdateClientAllowedKeys(name, f.AllowedKeys)); // 시드 유지, 권한만 교체
+        Guard(() => _store.UpdateClientAllowedKeys(name, f.AllowedKeys));
         RefreshClients();
     }
 
     private void DeleteClient()
     {
         if (_clientList.SelectedItem is not string name) return;
-        if (MessageBox.Show($"'{name}' 클라이언트를 삭제할까요?", "삭제", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+        if (MessageBox.Show(Loc.T("confirm.deleteClient", name), Loc.T("title.delete"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             return;
         Guard(() => _store.DeleteClient(name));
         RefreshClients();
@@ -210,7 +264,7 @@ internal sealed class MainForm : Form
     private void Guard(Action action)
     {
         try { action(); }
-        catch (InvalidOperationException ex) { MessageBox.Show(ex.Message, "KeyManager", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
-        catch (Exception ex) { MessageBox.Show($"오류: {ex.Message}", "KeyManager", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        catch (InvalidOperationException ex) { MessageBox.Show(ex.Message, Loc.T("app.title"), MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception ex) { MessageBox.Show(Loc.T("err.fmt", ex.Message), Loc.T("app.title"), MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
 }

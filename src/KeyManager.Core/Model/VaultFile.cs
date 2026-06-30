@@ -19,16 +19,33 @@ public sealed class VaultFile
     public List<VaultEntryRecord> Entries { get; set; } = [];
 
     public List<ClientRecord> Clients { get; set; } = [];
+
+    /// <summary>그룹(콜론 prefix)별 설명. 그룹은 가상 노드라 별도로 보관.</summary>
+    public List<GroupMetaRecord> Groups { get; set; } = [];
 }
 
-/// <summary>시크릿 한 항목. name/value 모두 암호문.</summary>
+/// <summary>시크릿 한 항목. name/value/description 모두 암호문.</summary>
 public sealed class VaultEntryRecord
 {
     public string Id { get; set; } = "";
     public SealedData Name { get; set; } = new();
     public SealedData Value { get; set; } = new();
+
+    /// <summary>(선택) 설명. 메타데이터 보호 위해 암호화. null이면 설명 없음.</summary>
+    public SealedData? Description { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>그룹 설명 레코드. 경로·설명 모두 암호문(메타데이터 보호).</summary>
+public sealed class GroupMetaRecord
+{
+    /// <summary>그룹 경로(콜론 prefix)를 암호화한 것.</summary>
+    public SealedData Path { get; set; } = new();
+
+    /// <summary>그룹 설명(암호문).</summary>
+    public SealedData Description { get; set; } = new();
 }
 
 /// <summary>소비 앱 등록 레코드. seed/allowedKeys 모두 암호문.</summary>

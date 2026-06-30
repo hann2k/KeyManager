@@ -36,41 +36,48 @@ internal static class DialogUi
     }
 }
 
-/// <summary>키 추가/수정. 값은 입력하는 이 순간에만 평문으로 보인다(설계 §12).</summary>
+/// <summary>키 추가/수정. 값은 입력하는 이 순간에만 평문으로 보인다(설계 §12). 설명도 함께 설정.</summary>
 internal sealed class AddSecretForm : Form
 {
     private readonly TextBox _name = new() { Width = 300, Anchor = AnchorStyles.Left | AnchorStyles.Right };
-    private readonly TextBox _value = new() { Width = 300, Multiline = true, Height = 80, ScrollBars = ScrollBars.Vertical, Anchor = AnchorStyles.Left | AnchorStyles.Right };
-    private readonly CheckBox _reveal = new() { Text = "값 표시", AutoSize = true, Margin = new Padding(3, 6, 3, 3) };
+    private readonly TextBox _value = new() { Width = 300, Multiline = true, Height = 70, ScrollBars = ScrollBars.Vertical, Anchor = AnchorStyles.Left | AnchorStyles.Right };
+    private readonly TextBox _desc = new() { Width = 300, Anchor = AnchorStyles.Left | AnchorStyles.Right };
+    private readonly CheckBox _reveal = new() { AutoSize = true, Margin = new Padding(3, 6, 3, 3) };
 
     public string SecretName => _name.Text.Trim();
     public string SecretValue => _value.Text;
+    public string DescriptionText => _desc.Text.Trim();
 
-    public AddSecretForm(string? fixedName = null)
+    public AddSecretForm(string? fixedName = null, string? currentDescription = null)
     {
-        DialogUi.ConfigureDialog(this, fixedName is null ? "키 추가" : $"값 변경 — {fixedName}");
+        DialogUi.ConfigureDialog(this, fixedName is null ? Loc.T("sec.titleAdd") : Loc.T("sec.titleEdit", fixedName));
 
         var grid = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, Dock = DockStyle.Fill };
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        grid.Controls.Add(new Label { Text = "이름:", AutoSize = true, Margin = new Padding(3, 3, 3, 1) });
+        grid.Controls.Add(new Label { Text = Loc.T("sec.name"), AutoSize = true, Margin = new Padding(3, 3, 3, 1) });
         if (fixedName is not null) { _name.Text = fixedName; _name.ReadOnly = true; }
         grid.Controls.Add(_name);
 
-        grid.Controls.Add(new Label { Text = "값:", AutoSize = true, Margin = new Padding(3, 8, 3, 1) });
+        grid.Controls.Add(new Label { Text = Loc.T("sec.value"), AutoSize = true, Margin = new Padding(3, 8, 3, 1) });
         _value.UseSystemPasswordChar = true;
         grid.Controls.Add(_value);
 
+        _reveal.Text = Loc.T("sec.showValue");
         _reveal.CheckedChanged += (_, _) => _value.UseSystemPasswordChar = !_reveal.Checked;
         grid.Controls.Add(_reveal);
 
-        var ok = new Button { Text = "저장", DialogResult = DialogResult.OK };
-        var cancel = new Button { Text = "취소", DialogResult = DialogResult.Cancel };
+        grid.Controls.Add(new Label { Text = Loc.T("sec.desc"), AutoSize = true, Margin = new Padding(3, 8, 3, 1) });
+        _desc.Text = currentDescription ?? "";
+        grid.Controls.Add(_desc);
+
+        var ok = new Button { Text = Loc.T("save"), DialogResult = DialogResult.OK };
+        var cancel = new Button { Text = Loc.T("cancel"), DialogResult = DialogResult.Cancel };
         ok.Click += (s, e) =>
         {
             if (SecretName.Length == 0 || SecretValue.Length == 0)
             {
-                MessageBox.Show("이름과 값을 모두 입력하세요.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(Loc.T("sec.errNameValue"), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 DialogResult = DialogResult.None;
             }
         };
@@ -98,33 +105,31 @@ internal sealed class AddClientForm : Form
     public string ClientName => _name.Text.Trim();
     public string[] AllowedKeys => KeyTreeBuilder.CollectGrants(_tree).ToArray();
 
-    /// <param name="existingName">편집 모드면 기존 이름(읽기전용). 신규 등록이면 null.</param>
-    /// <param name="preselected">편집 모드에서 미리 체크할 grant들.</param>
     public AddClientForm(IEnumerable<string> availableKeys, string? existingName = null, IEnumerable<string>? preselected = null)
     {
         bool edit = existingName is not null;
-        DialogUi.ConfigureDialog(this, edit ? $"권한 편집 — {existingName}" : "클라이언트 등록");
+        DialogUi.ConfigureDialog(this, edit ? Loc.T("cli.titleEdit", existingName!) : Loc.T("cli.titleRegister"));
 
         var grid = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, Dock = DockStyle.Fill };
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        grid.Controls.Add(new Label { Text = "클라이언트 이름:", AutoSize = true, Margin = new Padding(3, 3, 3, 1) });
+        grid.Controls.Add(new Label { Text = Loc.T("cli.name"), AutoSize = true, Margin = new Padding(3, 3, 3, 1) });
         if (edit) { _name.Text = existingName; _name.ReadOnly = true; }
         grid.Controls.Add(_name);
 
-        grid.Controls.Add(new Label { Text = "접근 허용 키 (그룹 체크 = 하위 전체):", AutoSize = true, Margin = new Padding(3, 8, 3, 1) });
+        grid.Controls.Add(new Label { Text = Loc.T("cli.allowed"), AutoSize = true, Margin = new Padding(3, 8, 3, 1) });
         var pre = preselected is null ? new HashSet<string>(StringComparer.Ordinal) : new HashSet<string>(preselected, StringComparer.Ordinal);
         KeyTreeBuilder.Populate(_tree, availableKeys, pre);
-        _tree.AfterCheck += OnAfterCheck; // 부모 체크 → 하위 전파
+        _tree.AfterCheck += OnAfterCheck;
         grid.Controls.Add(_tree);
 
-        var ok = new Button { Text = edit ? "저장" : "등록", DialogResult = DialogResult.OK };
-        var cancel = new Button { Text = "취소", DialogResult = DialogResult.Cancel };
+        var ok = new Button { Text = edit ? Loc.T("save") : Loc.T("cli.register"), DialogResult = DialogResult.OK };
+        var cancel = new Button { Text = Loc.T("cancel"), DialogResult = DialogResult.Cancel };
         ok.Click += (s, e) =>
         {
             if (ClientName.Length == 0)
             {
-                MessageBox.Show("클라이언트 이름을 입력하세요.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(Loc.T("cli.errName"), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 DialogResult = DialogResult.None;
             }
         };
@@ -137,7 +142,7 @@ internal sealed class AddClientForm : Form
     private void OnAfterCheck(object? sender, TreeViewEventArgs e)
     {
         if (_suppressCheck || e.Node is null) return;
-        if (e.Action == TreeViewAction.Unknown) return; // 프로그램적 설정은 무시(전파 중복 방지)
+        if (e.Action == TreeViewAction.Unknown) return;
         _suppressCheck = true;
         KeyTreeBuilder.CheckRecursive(e.Node, e.Node.Checked);
         _suppressCheck = false;
@@ -149,14 +154,14 @@ internal sealed class SeedDisplayForm : Form
 {
     public SeedDisplayForm(string clientName, string base64Seed)
     {
-        DialogUi.ConfigureDialog(this, $"'{clientName}' 시드 (1회만 표시)");
+        DialogUi.ConfigureDialog(this, Loc.T("seed.title", clientName));
 
         var grid = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, Dock = DockStyle.Fill };
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         grid.Controls.Add(new Label
         {
-            Text = "아래 시드를 소비 앱에 설정하세요. 이 창을 닫으면 다시 볼 수 없습니다.",
+            Text = Loc.T("seed.info"),
             AutoSize = true, MaximumSize = new Size(420, 0), Margin = new Padding(3, 3, 3, 8),
         });
 
@@ -169,11 +174,11 @@ internal sealed class SeedDisplayForm : Form
         box.SelectAll();
         grid.Controls.Add(box);
 
-        var copy = new Button { Text = "클립보드로 복사", AutoSize = true, Margin = new Padding(3, 6, 3, 3) };
-        copy.Click += (_, _) => { Clipboard.SetText(base64Seed); copy.Text = "복사됨!"; };
+        var copy = new Button { Text = Loc.T("seed.copy"), AutoSize = true, Margin = new Padding(3, 6, 3, 3) };
+        copy.Click += (_, _) => { Clipboard.SetText(base64Seed); copy.Text = Loc.T("seed.copied"); };
         grid.Controls.Add(copy);
 
-        var ok = new Button { Text = "닫기", DialogResult = DialogResult.OK };
+        var ok = new Button { Text = Loc.T("close"), DialogResult = DialogResult.OK };
         grid.Controls.Add(DialogUi.ButtonRow(ok));
 
         Controls.Add(grid);

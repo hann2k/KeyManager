@@ -96,6 +96,43 @@ public class VaultStoreTests : IDisposable
     }
 
     [Fact]
+    public void Secret_Description_SetGetClear()
+    {
+        using var store = CreateUnlocked();
+        store.AddOrUpdateSecret("k", "v");
+        Assert.Null(store.GetSecretDescription("k"));
+        store.SetSecretDescription("k", "my description");
+        Assert.Equal("my description", store.GetSecretDescription("k"));
+        store.SetSecretDescription("k", null);
+        Assert.Null(store.GetSecretDescription("k"));
+    }
+
+    [Fact]
+    public void GroupDescription_SetGetPersist()
+    {
+        using (var store = CreateUnlocked("pw1"))
+        {
+            store.AddOrUpdateSecret("g:a", "1");
+            store.SetGroupDescription("g", "group note");
+            Assert.Equal("group note", store.GetGroupDescription("g"));
+        }
+        var reloaded = VaultStore.Load(_path, TimeSpan.Zero);
+        Assert.True(reloaded.Unlock("pw1"));
+        Assert.Equal("group note", reloaded.GetGroupDescription("g"));
+        reloaded.Dispose();
+    }
+
+    [Fact]
+    public void DeleteGroup_AlsoRemovesGroupDescription()
+    {
+        using var store = CreateUnlocked();
+        store.AddOrUpdateSecret("g:a", "1");
+        store.SetGroupDescription("g", "note");
+        store.DeleteGroup("g");
+        Assert.Null(store.GetGroupDescription("g"));
+    }
+
+    [Fact]
     public void Client_AddAndResolve()
     {
         using var store = CreateUnlocked();
