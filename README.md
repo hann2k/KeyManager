@@ -127,3 +127,10 @@ This is a framework-dependent build, so the target PC needs the .NET 10 runtime.
 
 Local only. Cloud sync (zero-knowledge hybrid), backup/recovery, and the Argon2id swap are planned for
 phase 2 ([docs/developmentpurpose.md](docs/developmentpurpose.md) §11, §15).
+
+## Roadmap
+
+Phase 1 is local-only over Named Pipe. Planned next:
+
+1. **TCP version** — a TCP/TLS transport adapter (swappable via `ISecretTransport`, see docs §7) so consumers on other machines, containers, or WSL can connect. Reuses the §9 protocol, adding TLS and clock-skew tolerance for the time-based codes.
+2. **Cloud version** — the zero-knowledge hybrid (docs §11): the cloud syncs **only the encrypted vault** while decryption stays in the local agent. Adds a sync backend, conflict/version handling, and backup/recovery (recovery key).
