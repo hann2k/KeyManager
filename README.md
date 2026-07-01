@@ -7,7 +7,7 @@ only the values an authorized app is allowed to see, safely. Two stages ship in 
 **stage 1** — a single local tray agent over a **Named Pipe**; **stage 2** — a **TCP/TLS**
 split into a resident server + a non-resident admin GUI, so consumers on other machines,
 containers, or WSL can connect. See [docs/developmentpurpose.md](docs/developmentpurpose.md)
-for the design rationale and [docs/tcp-architecture.md](docs/tcp-architecture.md) for the
+for the design rationale and [docs/tcp-architecture.en.md](docs/tcp-architecture.en.md) for the
 stage-2 contract.
 
 ## Layout
@@ -201,5 +201,5 @@ phase 2 ([docs/developmentpurpose.md](docs/developmentpurpose.md) §11, §15).
 
 Stage 1 is local-only over Named Pipe. Status:
 
-1. **TCP version — implemented / in progress.** A TCP/TLS split (`KeyManager.Server` resident host + `KeyManager.MasterGui` non-resident admin) so consumers on other machines, containers, or WSL can connect. Uses the C1 envelope model (zero-knowledge server), TOFU-pinned TLS, admin-token auth, and clock-skew tolerance for the time-based codes. See [docs/tcp-architecture.md](docs/tcp-architecture.md).
+1. **TCP version — implemented / in progress.** A TCP/TLS split (`KeyManager.Server` resident host + `KeyManager.MasterGui` non-resident admin) so consumers on other machines, containers, or WSL can connect. Uses the C1 envelope model (zero-knowledge server), TOFU-pinned TLS, admin-token auth, and clock-skew tolerance for the time-based codes. See [docs/tcp-architecture.en.md](docs/tcp-architecture.en.md).
 2. **Cloud version — future.** The zero-knowledge hybrid (docs §11): the cloud syncs **only the encrypted vault** while decryption stays local. Adds a sync backend, conflict/version handling, and backup/recovery (recovery key).

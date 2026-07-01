@@ -1,5 +1,7 @@
 # KeyManager — TCP 버전 아키텍처 계약 (구현 스펙)
 
+[English](tcp-architecture.en.md) · **한국어**
+
 > 로드맵 1번 "TCP 버전"의 **구현 계약(contract)**. 모든 subagent(backend/winform/i18n/misc)는
 > 이 문서를 단일 기준으로 삼는다. 배경: [handoff.md](../handoff.md), [docs/개발목적.md](개발목적.md).
 > 복호화 모델 = **C1 봉투(envelope)** — 서버는 마스터키(`Kd`)를 갖지 않는다.

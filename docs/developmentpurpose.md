@@ -305,7 +305,7 @@ Decided defaults:
 - Process binding (§13): **optional** in phase 1 (off by default), scaffolding in place
 
 Phase 2 and beyond:
-- [~] **TCP version (in progress)** — TCP/TLS split into a resident server (`KeyManager.Server`) + a non-resident admin GUI (`KeyManager.MasterGui`), C1 envelope model (zero-knowledge server). Contract: [tcp-architecture.md](tcp-architecture.md).
+- [~] **TCP version (in progress)** — TCP/TLS split into a resident server (`KeyManager.Server`) + a non-resident admin GUI (`KeyManager.MasterGui`), C1 envelope model (zero-knowledge server). Contract: [tcp-architecture.en.md](tcp-architecture.en.md).
 - [ ] Cloud sync backend (self-hosted vs S3-compatible) and conflict/version handling
 - [ ] Key backup/recovery + a recovery key
 - [ ] Write (store) requests initiated by consumer apps
