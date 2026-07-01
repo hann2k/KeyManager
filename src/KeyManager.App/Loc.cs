@@ -63,6 +63,16 @@ internal static class Loc
         ["mp.errMismatch"] = "Passwords do not match.",
         ["mp.errWrong"] = "Incorrect password.",
 
+        ["tray.changePw"] = "Change master password",
+        ["cpw.title"] = "Change master password",
+        ["cpw.current"] = "Current password:",
+        ["cpw.new"] = "New password:",
+        ["cpw.confirm"] = "Confirm new password:",
+        ["cpw.errEmpty"] = "Fill in all fields.",
+        ["cpw.errMismatch"] = "The new passwords do not match.",
+        ["cpw.errWrongCurrent"] = "The current password is incorrect.",
+        ["cpw.success"] = "Master password changed. Consumer app seeds are unchanged.",
+
         ["sec.titleAdd"] = "Add key",
         ["sec.titleEdit"] = "Change value — {0}",
         ["sec.name"] = "Name:",
@@ -144,6 +154,16 @@ internal static class Loc
         ["mp.errEmpty"] = "암호를 입력하세요.",
         ["mp.errMismatch"] = "확인 암호가 일치하지 않습니다.",
         ["mp.errWrong"] = "암호가 올바르지 않습니다.",
+
+        ["tray.changePw"] = "마스터 암호 변경",
+        ["cpw.title"] = "마스터 암호 변경",
+        ["cpw.current"] = "현재 암호:",
+        ["cpw.new"] = "새 암호:",
+        ["cpw.confirm"] = "새 암호 확인:",
+        ["cpw.errEmpty"] = "모든 칸을 입력하세요.",
+        ["cpw.errMismatch"] = "새 암호가 일치하지 않습니다.",
+        ["cpw.errWrongCurrent"] = "현재 암호가 올바르지 않습니다.",
+        ["cpw.success"] = "마스터 암호가 변경되었습니다. 소비 앱 시드는 그대로입니다.",
 
         ["sec.titleAdd"] = "키 추가",
         ["sec.titleEdit"] = "값 변경 — {0}",

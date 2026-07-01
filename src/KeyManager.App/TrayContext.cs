@@ -13,6 +13,7 @@ internal sealed class TrayContext : ApplicationContext
     private readonly NotifyIcon _icon;
     private readonly ToolStripMenuItem _openItem;
     private readonly ToolStripMenuItem _lockItem;
+    private readonly ToolStripMenuItem _changePwItem;
     private readonly ToolStripMenuItem _exitItem;
     private readonly Control _marshal = new();
     private readonly AppSettings _settings;
@@ -45,10 +46,12 @@ internal sealed class TrayContext : ApplicationContext
         // 2) 트레이 메뉴
         _openItem = new ToolStripMenuItem(Loc.T("tray.open"), null, (_, _) => ShowMain());
         _lockItem = new ToolStripMenuItem(Loc.T("tray.lock"), null, (_, _) => ToggleLock());
+        _changePwItem = new ToolStripMenuItem(Loc.T("tray.changePw"), null, (_, _) => ChangePassword());
         _exitItem = new ToolStripMenuItem(Loc.T("tray.exit"), null, (_, _) => ExitApp());
         var menu = new ContextMenuStrip();
         menu.Items.Add(_openItem);
         menu.Items.Add(_lockItem);
+        menu.Items.Add(_changePwItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_exitItem);
 
@@ -129,6 +132,7 @@ internal sealed class TrayContext : ApplicationContext
         _settings.Save();
 
         _openItem.Text = Loc.T("tray.open");
+        _changePwItem.Text = Loc.T("tray.changePw");
         _exitItem.Text = Loc.T("tray.exit");
         UpdateState();
 
@@ -147,6 +151,28 @@ internal sealed class TrayContext : ApplicationContext
         if (_store is null) return;
         if (_store.IsUnlocked) _store.Lock();
         else PromptUnlock();
+    }
+
+    private void ChangePassword()
+    {
+        if (_store is null) return;
+        if (!PromptUnlock()) return; // 변경하려면 먼저 해제 상태여야 함
+
+        using var f = new ChangeMasterPasswordForm();
+        if (f.ShowDialog() != DialogResult.OK) return;
+
+        bool ok;
+        try { ok = _store.ChangeMasterPassword(f.CurrentPassword, f.NewPassword); }
+        catch (Exception ex)
+        {
+            MessageBox.Show(Loc.T("err.fmt", ex.Message), Loc.T("cpw.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        if (!ok)
+            MessageBox.Show(Loc.T("cpw.errWrongCurrent"), Loc.T("cpw.title"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        else
+            MessageBox.Show(Loc.T("cpw.success"), Loc.T("cpw.title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void OnStoreStateChanged()

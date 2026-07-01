@@ -133,6 +133,46 @@ public class VaultStoreTests : IDisposable
     }
 
     [Fact]
+    public void ChangeMasterPassword_ReEncrypts_PreservesEverything()
+    {
+        byte[] seed;
+        using (var store = CreateUnlocked("old-pw"))
+        {
+            store.AddOrUpdateSecret("k", "v");
+            store.SetSecretDescription("k", "desc");
+            seed = store.AddClient("app1", new[] { "k" });
+
+            Assert.True(store.ChangeMasterPassword("old-pw", "new-pw"));
+
+            // 여전히 해제 상태, 데이터·시드 그대로
+            Assert.True(store.TryGetSecret("k", out var v)); Assert.Equal("v", v);
+            Assert.Equal("desc", store.GetSecretDescription("k"));
+            Assert.True(store.TryGetClient("app1", out var view));
+            Assert.Equal(seed, view!.Seed); // 시드 값 보존(소비 앱 재설정 불필요)
+        }
+
+        // 재로드: 옛 암호 실패, 새 암호 성공
+        var reloaded = VaultStore.Load(_path, TimeSpan.Zero);
+        Assert.False(reloaded.Unlock("old-pw"));
+        Assert.True(reloaded.Unlock("new-pw"));
+        Assert.True(reloaded.TryGetSecret("k", out var v2)); Assert.Equal("v", v2);
+        Assert.True(reloaded.TryGetClient("app1", out var view2));
+        Assert.Equal(seed, view2!.Seed);
+        reloaded.Dispose();
+    }
+
+    [Fact]
+    public void ChangeMasterPassword_WrongCurrent_ReturnsFalse()
+    {
+        using var store = CreateUnlocked("old-pw");
+        store.AddOrUpdateSecret("k", "v");
+        Assert.False(store.ChangeMasterPassword("wrong", "new-pw"));
+        // 옛 암호는 여전히 유효
+        store.Lock();
+        Assert.True(store.Unlock("old-pw"));
+    }
+
+    [Fact]
     public void Client_AddAndResolve()
     {
         using var store = CreateUnlocked();

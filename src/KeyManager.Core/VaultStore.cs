@@ -161,6 +161,84 @@ public sealed class VaultStore : IDisposable
     private byte[] RequireUnlocked()
         => _kd ?? throw new InvalidOperationException("잠금 상태입니다. 먼저 unlock 하세요.");
 
+    /// <summary>
+    /// 마스터 암호 변경. 현재 암호를 재검증한 뒤 모든 암호문을 새 Kd(새 salt)로 다시 감싼다.
+    /// 소비 앱의 시드 S 값은 그대로라 재설정 불필요(설계 §4의 두 키 분리).
+    /// 재암호화본을 메모리에서 완성한 뒤 원자적으로 저장 → 중간 실패 시 기존 vault 유지.
+    /// 현재 암호가 틀리면 false.
+    /// </summary>
+    public bool ChangeMasterPassword(string currentPassword, string newPassword)
+    {
+        lock (_gate)
+        {
+            byte[] oldKd = RequireUnlocked();
+
+            // 현재 암호 재검증(도난 세션 오용 방지)
+            byte[] check = _kdf.DeriveKey(currentPassword, _file.Kdf);
+            bool valid;
+            try { valid = AeadBox.OpenString(check, _file.Verifier) == VerifierMagic; }
+            catch (CryptographicException) { valid = false; }
+            CryptographicOperations.ZeroMemory(check);
+            if (!valid) return false;
+
+            // 새 키 + 파라미터(새 salt)
+            var newParams = _kdf.CreateParameters();
+            byte[] newKd = _kdf.DeriveKey(newPassword, newParams);
+
+            try
+            {
+                var newFile = new VaultFile
+                {
+                    Version = _file.Version,
+                    Kdf = newParams,
+                    Verifier = AeadBox.SealString(newKd, VerifierMagic),
+                    Entries = _file.Entries.Select(e => new VaultEntryRecord
+                    {
+                        Id = e.Id,
+                        Name = Rewrap(oldKd, newKd, e.Name),
+                        Value = Rewrap(oldKd, newKd, e.Value),
+                        Description = e.Description is null ? null : Rewrap(oldKd, newKd, e.Description),
+                        CreatedAt = e.CreatedAt,
+                        UpdatedAt = e.UpdatedAt,
+                    }).ToList(),
+                    Clients = _file.Clients.Select(c => new ClientRecord
+                    {
+                        Id = c.Id,
+                        Name = Rewrap(oldKd, newKd, c.Name),
+                        Seed = Rewrap(oldKd, newKd, c.Seed),
+                        AllowedKeys = Rewrap(oldKd, newKd, c.AllowedKeys),
+                        BoundProcessPath = c.BoundProcessPath,
+                        CreatedAt = c.CreatedAt,
+                    }).ToList(),
+                    Groups = _file.Groups.Select(g => new GroupMetaRecord
+                    {
+                        Path = Rewrap(oldKd, newKd, g.Path),
+                        Description = Rewrap(oldKd, newKd, g.Description),
+                    }).ToList(),
+                };
+
+                SaveFile(newFile); // 원자적 교체. 실패 시 예외 → 아래 catch에서 정리
+
+                // 커밋: 메모리 상태 교체
+                CryptographicOperations.ZeroMemory(oldKd);
+                _kd = newKd;
+                _file = newFile;
+                BuildIndexes(newKd);
+                Touch();
+            }
+            catch
+            {
+                CryptographicOperations.ZeroMemory(newKd);
+                throw;
+            }
+        }
+        StateChanged?.Invoke();
+        return true;
+    }
+
+    private static SealedData Rewrap(byte[] oldKd, byte[] newKd, SealedData data)
+        => AeadBox.Seal(newKd, AeadBox.Open(oldKd, data));
+
     // ---- 시크릿 항목 ----------------------------------------------------
 
     /// <summary>이름으로 추가/갱신. 같은 이름이면 값만 교체.</summary>
