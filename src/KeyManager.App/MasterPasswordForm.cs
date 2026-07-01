@@ -1,3 +1,5 @@
+using System.Drawing;
+
 namespace KeyManager.App;
 
 /// <summary>마스터 암호 입력. create 모드면 확인 입력까지 받는다. (고DPI 대응: AutoSize 레이아웃)</summary>
@@ -31,24 +33,40 @@ internal sealed class MasterPasswordForm : Form
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
+        int r = 0;
+
         var info = new Label
         {
             Text = Loc.T(create ? "mp.infoCreate" : "mp.infoUnlock"),
             AutoSize = true,
+            Margin = new Padding(3, 3, 3, 6),
+        };
+        grid.Controls.Add(info, 0, r);
+        grid.SetColumnSpan(info, 2);
+        r++;
+
+        // 경고 문구(눈에 띄게)
+        var warn = new Label
+        {
+            Text = Loc.T("warn.master"),
+            AutoSize = true,
+            MaximumSize = new Size(340, 0),
+            ForeColor = Color.Firebrick,
             Margin = new Padding(3, 3, 3, 10),
         };
-        grid.Controls.Add(info, 0, 0);
-        grid.SetColumnSpan(info, 2);
+        grid.Controls.Add(warn, 0, r);
+        grid.SetColumnSpan(warn, 2);
+        r++;
 
-        grid.Controls.Add(new Label { Text = Loc.T("mp.password"), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 6, 6, 3) }, 0, 1);
-        grid.Controls.Add(_pw, 1, 1);
+        grid.Controls.Add(new Label { Text = Loc.T("mp.password"), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 6, 6, 3) }, 0, r);
+        grid.Controls.Add(_pw, 1, r);
+        r++;
 
-        int buttonRow = 2;
         if (create)
         {
-            grid.Controls.Add(new Label { Text = Loc.T("mp.confirm"), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 6, 6, 3) }, 0, 2);
-            grid.Controls.Add(_confirm, 1, 2);
-            buttonRow = 3;
+            grid.Controls.Add(new Label { Text = Loc.T("mp.confirm"), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 6, 6, 3) }, 0, r);
+            grid.Controls.Add(_confirm, 1, r);
+            r++;
         }
 
         var ok = new Button { Text = Loc.T("ok"), DialogResult = DialogResult.OK, AutoSize = true, MinimumSize = new Size(75, 0) };
@@ -58,7 +76,7 @@ internal sealed class MasterPasswordForm : Form
         var buttons = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, AutoSize = true, Anchor = AnchorStyles.Right, Margin = new Padding(3, 10, 3, 3) };
         buttons.Controls.Add(ok);
         buttons.Controls.Add(cancel);
-        grid.Controls.Add(buttons, 0, buttonRow);
+        grid.Controls.Add(buttons, 0, r);
         grid.SetColumnSpan(buttons, 2);
 
         Controls.Add(grid);

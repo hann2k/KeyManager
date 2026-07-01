@@ -19,15 +19,26 @@ internal sealed class ChangeMasterPasswordForm : Form
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        AddRow(grid, 0, Loc.T("cpw.current"), _current);
-        AddRow(grid, 1, Loc.T("cpw.new"), _new);
-        AddRow(grid, 2, Loc.T("cpw.confirm"), _confirm);
+        var warn = new Label
+        {
+            Text = Loc.T("warn.master"),
+            AutoSize = true,
+            MaximumSize = new Size(360, 0),
+            ForeColor = Color.Firebrick,
+            Margin = new Padding(3, 3, 3, 10),
+        };
+        grid.Controls.Add(warn, 0, 0);
+        grid.SetColumnSpan(warn, 2);
+
+        AddRow(grid, 1, Loc.T("cpw.current"), _current);
+        AddRow(grid, 2, Loc.T("cpw.new"), _new);
+        AddRow(grid, 3, Loc.T("cpw.confirm"), _confirm);
 
         var ok = new Button { Text = Loc.T("save"), DialogResult = DialogResult.OK };
         var cancel = new Button { Text = Loc.T("cancel"), DialogResult = DialogResult.Cancel };
         ok.Click += OnOk;
         var buttons = DialogUi.ButtonRow(ok, cancel);
-        grid.Controls.Add(buttons, 0, 3);
+        grid.Controls.Add(buttons, 0, 4);
         grid.SetColumnSpan(buttons, 2);
 
         Controls.Add(grid);
