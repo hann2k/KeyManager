@@ -28,10 +28,11 @@ internal sealed class ServerTrayContext : ApplicationContext
         // 2) 최초 실행 감지는 StartDefault(내부에서 store를 생성) 전에 해야 한다.
         bool firstRun = !File.Exists(ServerStore.DefaultPath);
 
-        // 3) 서버 기동.
+        // 3) 서버 기동. 리슨 포트는 설정 파일/환경변수에서(기본 9713).
+        int port = ServerSettings.Load().Port;
         try
         {
-            _host = ServerHost.StartDefault();
+            _host = ServerHost.StartDefault(port);
         }
         catch (Exception ex)
         {
