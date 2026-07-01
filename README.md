@@ -19,7 +19,7 @@ See [docs/developmentpurpose.md](docs/developmentpurpose.md) for the design rati
 
 ## Security model (summary)
 
-- **At rest (①)**: master password → Argon2id (PBKDF2-SHA256 in phase 1) → `Kd`. Names, values, seeds, and allow-lists are all AES-256-GCM. `Kd` is resident only while unlocked (wiped on manual lock); idle auto-lock is disabled by default.
+- **At rest (①)**: master password → Argon2id (memory-hard; legacy PBKDF2 vaults are auto-detected and migrated on password change) → `Kd`. Names, values, seeds, and allow-lists are all AES-256-GCM. `Kd` is resident only while unlocked (wiped on manual lock); idle auto-lock is disabled by default.
 - **In transit (②)**: the server issues a fresh challenge nonce per connection. The consumer derives `authCode` (authentication) and `sessionKey` (transport encryption) from the shared seed `S` on its own. `S`, `sessionKey`, and `Kd` never travel over the wire.
 - A consumer can read **only the keys within its allow-list**, and only ever removes the transport layer to obtain plaintext. The master key never leaves the agent.
 
@@ -125,7 +125,7 @@ This is a framework-dependent build, so the target PC needs the .NET 10 runtime.
 
 ## Phase 1 (MVP) scope
 
-Local only. Cloud sync (zero-knowledge hybrid), backup/recovery, and the Argon2id swap are planned for
+Local only. Cloud sync (zero-knowledge hybrid) and backup/recovery are planned for
 phase 2 ([docs/developmentpurpose.md](docs/developmentpurpose.md) §11, §15).
 
 ## Roadmap

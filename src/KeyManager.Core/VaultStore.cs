@@ -60,7 +60,7 @@ public sealed class VaultStore : IDisposable
 
     public static VaultStore CreateNew(string path, string masterPassword, TimeSpan autoLockAfter, IKeyDerivation? kdf = null)
     {
-        kdf ??= new Pbkdf2KeyDerivation();
+        kdf ??= KeyDerivations.Default;
         var kdfParams = kdf.CreateParameters();
         byte[] kd = kdf.DeriveKey(masterPassword, kdfParams);
         var file = new VaultFile
@@ -76,7 +76,7 @@ public sealed class VaultStore : IDisposable
 
     public static VaultStore Load(string path, TimeSpan autoLockAfter, IKeyDerivation? kdf = null)
     {
-        kdf ??= new Pbkdf2KeyDerivation();
+        kdf ??= KeyDerivations.Default;
         byte[] bytes = File.ReadAllBytes(path);
         VaultFile file = JsonSerializer.Deserialize<VaultFile>(bytes, FileJson)
             ?? throw new InvalidDataException("vault 파일을 읽을 수 없습니다.");
@@ -90,7 +90,8 @@ public sealed class VaultStore : IDisposable
     {
         lock (_gate)
         {
-            byte[] kd = _kdf.DeriveKey(masterPassword, _file.Kdf);
+            // 파일에 기록된 알고리즘으로 유도(구 PBKDF2 vault도 그대로 해제).
+            byte[] kd = KeyDerivations.Resolve(_file.Kdf.Algorithm).DeriveKey(masterPassword, _file.Kdf);
             try
             {
                 string magic = AeadBox.OpenString(kd, _file.Verifier);
@@ -173,8 +174,8 @@ public sealed class VaultStore : IDisposable
         {
             byte[] oldKd = RequireUnlocked();
 
-            // 현재 암호 재검증(도난 세션 오용 방지)
-            byte[] check = _kdf.DeriveKey(currentPassword, _file.Kdf);
+            // 현재 암호 재검증(도난 세션 오용 방지). 기존 알고리즘으로 유도.
+            byte[] check = KeyDerivations.Resolve(_file.Kdf.Algorithm).DeriveKey(currentPassword, _file.Kdf);
             bool valid;
             try { valid = AeadBox.OpenString(check, _file.Verifier) == VerifierMagic; }
             catch (CryptographicException) { valid = false; }

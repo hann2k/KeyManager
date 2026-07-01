@@ -172,7 +172,11 @@ internal sealed class TrayContext : ApplicationContext
         if (!ok)
             MessageBox.Show(Loc.T("cpw.errWrongCurrent"), Loc.T("cpw.title"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
         else
-            MessageBox.Show(Loc.T("cpw.success"), Loc.T("cpw.title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+        {
+            // 동일 암호여도 새 salt로 재암호화됨(업그레이드). 그 경우 문구를 구분해 오해 방지.
+            bool same = string.Equals(f.CurrentPassword, f.NewPassword, StringComparison.Ordinal);
+            MessageBox.Show(Loc.T(same ? "cpw.reencrypted" : "cpw.success"), Loc.T("cpw.title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
     }
 
     private void OnStoreStateChanged()

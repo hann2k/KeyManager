@@ -1,4 +1,5 @@
 using KeyManager.Core;
+using KeyManager.Core.Crypto;
 
 namespace KeyManager.Core.Tests;
 
@@ -159,6 +160,43 @@ public class VaultStoreTests : IDisposable
         Assert.True(reloaded.TryGetClient("app1", out var view2));
         Assert.Equal(seed, view2!.Seed);
         reloaded.Dispose();
+    }
+
+    [Fact]
+    public void NewVault_UsesArgon2id()
+    {
+        using var store = CreateUnlocked();
+        Assert.Contains("Argon2id", File.ReadAllText(_path)); // 기본 KDF = Argon2id
+    }
+
+    [Fact]
+    public void OldPbkdf2Vault_Opens_And_MigratesOnPasswordChange()
+    {
+        // 구 PBKDF2 vault 생성
+        using (var store = VaultStore.CreateNew(_path, "pw", TimeSpan.Zero, new Pbkdf2KeyDerivation()))
+        {
+            store.Unlock("pw");
+            store.AddOrUpdateSecret("k", "v");
+        }
+        Assert.Contains("PBKDF2-SHA256", File.ReadAllText(_path));
+
+        // 기본 로드(Argon2id resolver)로도 PBKDF2 vault가 열린다
+        using (var store = VaultStore.Load(_path, TimeSpan.Zero))
+        {
+            Assert.True(store.Unlock("pw"));
+            Assert.True(store.TryGetSecret("k", out var v)); Assert.Equal("v", v);
+            // 암호 변경 → Argon2id로 이관
+            Assert.True(store.ChangeMasterPassword("pw", "pw2"));
+        }
+        Assert.Contains("Argon2id", File.ReadAllText(_path));
+        Assert.DoesNotContain("PBKDF2", File.ReadAllText(_path));
+
+        using (var store = VaultStore.Load(_path, TimeSpan.Zero))
+        {
+            Assert.False(store.Unlock("pw"));
+            Assert.True(store.Unlock("pw2"));
+            Assert.True(store.TryGetSecret("k", out var v)); Assert.Equal("v", v);
+        }
     }
 
     [Fact]

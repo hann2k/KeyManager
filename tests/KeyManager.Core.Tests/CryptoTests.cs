@@ -27,6 +27,19 @@ public class CryptoTests
     }
 
     [Fact]
+    public void Argon2id_IsDeterministic_AndKeyLength()
+    {
+        var kdf = new Argon2idKeyDerivation();
+        var p = kdf.CreateParameters();
+        Assert.Equal("Argon2id", p.Algorithm);
+        Assert.True(p.MemoryKib > 0 && p.Parallelism > 0);
+        byte[] a = kdf.DeriveKey("hunter2", p);
+        Assert.Equal(32, a.Length);
+        Assert.Equal(a, kdf.DeriveKey("hunter2", p));
+        Assert.NotEqual(a, kdf.DeriveKey("hunter3", p));
+    }
+
+    [Fact]
     public void AeadBox_Roundtrips()
     {
         byte[] key = RandomNumberGenerator.GetBytes(32);

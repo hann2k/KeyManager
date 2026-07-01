@@ -6,9 +6,9 @@ namespace KeyManager.Core.Crypto;
 /// 마스터 암호 → 저장 암호화 키 Kd 유도(설계 §5). 키는 디스크에 저장하지 않고
 /// salt + 파라미터만 저장해 unlock 시점마다 "수식"으로 재현한다.
 ///
-/// 1단계는 BCL 내장 PBKDF2-SHA256 사용(외부 패키지 불필요).
-/// 설계상 의도된 프로덕션 KDF는 Argon2id이며, <see cref="IKeyDerivation"/>로
-/// 추상화해 두어 추후 무중단 교체가 가능하다(파라미터에 algorithm 기록).
+/// 기본 KDF는 <see cref="Argon2idKeyDerivation"/>(메모리-하드, GPU 크래킹 저항).
+/// 구 vault(PBKDF2-SHA256)는 파일의 algorithm으로 <see cref="KeyDerivations.Resolve"/>가
+/// 골라 그대로 열 수 있고, 암호 변경 시 Argon2id로 자동 이관된다.
 /// </summary>
 public interface IKeyDerivation
 {
@@ -27,6 +27,26 @@ public sealed record KdfParameters
     public string Algorithm { get; init; } = "";
     public string Salt { get; init; } = "";       // base64
     public int Iterations { get; init; }
+
+    /// <summary>Argon2 메모리 비용(KiB). PBKDF2는 0/무시.</summary>
+    public int MemoryKib { get; init; }
+
+    /// <summary>Argon2 병렬도(lane). PBKDF2는 0/무시.</summary>
+    public int Parallelism { get; init; }
+}
+
+/// <summary>파일에 기록된 알고리즘 이름으로 알맞은 KDF 구현을 고른다(구 vault 호환).</summary>
+public static class KeyDerivations
+{
+    /// <summary>새 vault·암호 변경 시 사용하는 기본 KDF.</summary>
+    public static IKeyDerivation Default { get; } = new Argon2idKeyDerivation();
+
+    public static IKeyDerivation Resolve(string algorithm) => algorithm switch
+    {
+        "Argon2id" => new Argon2idKeyDerivation(),
+        "PBKDF2-SHA256" => new Pbkdf2KeyDerivation(),
+        _ => throw new NotSupportedException($"지원하지 않는 KDF: {algorithm}"),
+    };
 }
 
 public sealed class Pbkdf2KeyDerivation : IKeyDerivation

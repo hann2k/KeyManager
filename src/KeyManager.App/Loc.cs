@@ -72,6 +72,7 @@ internal static class Loc
         ["cpw.errMismatch"] = "The new passwords do not match.",
         ["cpw.errWrongCurrent"] = "The current password is incorrect.",
         ["cpw.success"] = "Master password changed. Consumer app seeds are unchanged.",
+        ["cpw.reencrypted"] = "The master password is unchanged, but the vault was re-encrypted with a new salt (KDF upgrade). Consumer app seeds are unchanged.",
 
         ["sec.titleAdd"] = "Add key",
         ["sec.titleEdit"] = "Change value — {0}",
@@ -164,6 +165,7 @@ internal static class Loc
         ["cpw.errMismatch"] = "새 암호가 일치하지 않습니다.",
         ["cpw.errWrongCurrent"] = "현재 암호가 올바르지 않습니다.",
         ["cpw.success"] = "마스터 암호가 변경되었습니다. 소비 앱 시드는 그대로입니다.",
+        ["cpw.reencrypted"] = "마스터 암호는 그대로지만, 내부 기밀이 새 salt로 재암호화되었습니다(KDF 업그레이드). 소비 앱 시드는 그대로입니다.",
 
         ["sec.titleAdd"] = "키 추가",
         ["sec.titleEdit"] = "값 변경 — {0}",
