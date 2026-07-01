@@ -304,7 +304,8 @@ Decided defaults:
 - Value re-view: **only once, at entry** (re-view after master re-confirmation to be considered later)
 - Process binding (§13): **optional** in phase 1 (off by default), scaffolding in place
 
-Phase 2 and beyond (undecided):
+Phase 2 and beyond:
+- [~] **TCP version (in progress)** — TCP/TLS split into a resident server (`KeyManager.Server`) + a non-resident admin GUI (`KeyManager.MasterGui`), C1 envelope model (zero-knowledge server). Contract: [tcp-architecture.md](tcp-architecture.md).
 - [ ] Cloud sync backend (self-hosted vs S3-compatible) and conflict/version handling
 - [ ] Key backup/recovery + a recovery key
 - [ ] Write (store) requests initiated by consumer apps

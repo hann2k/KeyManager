@@ -7,13 +7,19 @@ internal sealed class MainForm : Form
 {
     private readonly VaultStore _store;
     private readonly Action<Lang> _onLanguageChange;
+    private readonly Action? _onChangeMasterPassword;
     private readonly TreeView _secretTree = new() { Dock = DockStyle.Fill, HideSelection = false };
     private readonly ListBox _clientList = new() { Dock = DockStyle.Fill, IntegralHeight = false };
 
-    public MainForm(VaultStore store, Action<Lang> onLanguageChange)
+    /// <param name="onChangeMasterPassword">
+    /// null이 아니면 상단 메뉴에 "마스터 암호 변경" 항목을 노출한다(MasterGui용). App(트레이)은
+    /// 트레이 메뉴에서 변경을 처리하므로 null을 넘겨 이 메뉴를 숨긴다 — 폼은 한 벌만 유지.
+    /// </param>
+    public MainForm(VaultStore store, Action<Lang> onLanguageChange, Action? onChangeMasterPassword = null)
     {
         _store = store;
         _onLanguageChange = onLanguageChange;
+        _onChangeMasterPassword = onChangeMasterPassword;
         Text = Loc.T("app.title");
         StartPosition = FormStartPosition.CenterScreen;
         AutoScaleMode = AutoScaleMode.Font;
@@ -25,6 +31,15 @@ internal sealed class MainForm : Form
         tabs.TabPages.Add(BuildClientsTab());
         tabs.TabPages.Add(BuildLanguageTab());
         Controls.Add(tabs);
+
+        if (_onChangeMasterPassword is not null)
+        {
+            var menu = new MenuStrip { Dock = DockStyle.Top };
+            var item = new ToolStripMenuItem(Loc.T("tray.changePw"), null, (_, _) => _onChangeMasterPassword());
+            menu.Items.Add(item);
+            Controls.Add(menu);
+            MainMenuStrip = menu;
+        }
 
         RefreshSecrets();
         RefreshClients();

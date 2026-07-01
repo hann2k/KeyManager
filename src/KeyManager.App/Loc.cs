@@ -128,6 +128,53 @@ internal static class Loc
         ["lang.english"] = "English",
         ["lang.korean"] = "한국어",
         ["langtab.info"] = "Selecting a language applies it immediately.",
+
+        // ---- TCP: Server tray ----
+        ["srv.title"] = "KeyManager Server",
+        ["srv.menu.keys"] = "View key list",
+        ["srv.menu.exit"] = "Exit",
+        ["srv.tipListening"] = "KeyManager Server — listening on port {0}",
+        ["srv.startError"] = "Failed to start the server: {0}",
+        ["srv.alreadyRunning"] = "KeyManager Server is already running.",
+
+        // ---- TCP: Admin token one-time reveal ----
+        ["srv.token.title"] = "Admin token (shown once)",
+        ["srv.token.info"] = "The server is now listening. Enter the admin token below in the Master GUI the first time you connect.\nThis token is shown only once. You cannot view it again once this window closes.",
+        ["srv.token.port"] = "Listening port:",
+        ["srv.token.label"] = "Admin token:",
+        ["srv.token.copy"] = "Copy to clipboard",
+        ["srv.token.copied"] = "Copied!",
+
+        // ---- TCP: Server read-only metadata window ----
+        ["srv.list.title"] = "Registered clients (read-only)",
+        ["srv.list.note"] = "The server has no master password, so it cannot read key names or values. Only client (envelope) names and their last update time are shown.",
+        ["srv.list.vaultPresent"] = "Master vault: stored",
+        ["srv.list.vaultAbsent"] = "Master vault: not stored yet",
+        ["srv.list.envCount"] = "Registered clients (envelopes): {0}",
+        ["srv.list.colClient"] = "Client",
+        ["srv.list.colUpdated"] = "Last updated",
+        ["srv.list.empty"] = "No clients registered yet.",
+        ["srv.list.refresh"] = "Refresh",
+
+        // ---- TCP: Master GUI connection setup ----
+        ["mg.setup.title"] = "Connect to server",
+        ["mg.setup.info"] = "Enter the KeyManager server address and the admin token shown once on the server's first run.",
+        ["mg.setup.host"] = "Host:",
+        ["mg.setup.port"] = "Port:",
+        ["mg.setup.token"] = "Admin token:",
+        ["mg.setup.errHost"] = "Enter a host.",
+        ["mg.setup.errPort"] = "Enter a valid port (1-65535).",
+        ["mg.setup.errToken"] = "Paste a valid admin token (base64).",
+
+        // ---- TCP: Master GUI flow / push status ----
+        ["mg.title"] = "KeyManager Master",
+        ["mg.connecting"] = "Connecting to the server...",
+        ["mg.connectError"] = "Cannot reach the server: {0}",
+        ["mg.firstSetup"] = "The server has no vault yet. Create a master password to set one up.",
+        ["mg.pushError"] = "Failed to sync to the server: {0}\nYour changes are kept locally and will be retried on the next edit or on close.",
+        ["mg.closePushError"] = "Some changes could not be synced to the server before closing: {0}",
+        ["mg.importPrompt"] = "An existing local vault (stage-1 Named Pipe app) was found:\n{0}\n\nImport it to this server? You will unlock it with its existing master password.\n(The original file is left untouched.)",
+        ["mg.importDone"] = "The existing vault was imported to the server.",
     };
 
     private static readonly Dictionary<string, string> Ko = new(StringComparer.Ordinal)
@@ -222,5 +269,52 @@ internal static class Loc
         ["lang.english"] = "English",
         ["lang.korean"] = "한국어",
         ["langtab.info"] = "언어를 선택하면 즉시 적용됩니다.",
+
+        // ---- TCP: 서버 트레이 ----
+        ["srv.title"] = "KeyManager 서버",
+        ["srv.menu.keys"] = "Key 목록 보기",
+        ["srv.menu.exit"] = "종료",
+        ["srv.tipListening"] = "KeyManager 서버 — 포트 {0} 수신 중",
+        ["srv.startError"] = "서버를 시작하지 못했습니다: {0}",
+        ["srv.alreadyRunning"] = "KeyManager 서버가 이미 실행 중입니다.",
+
+        // ---- TCP: admin 토큰 1회 표시 ----
+        ["srv.token.title"] = "admin 토큰 (1회만 표시)",
+        ["srv.token.info"] = "서버가 수신을 시작했습니다. 마스터 GUI에 처음 접속할 때 아래 admin 토큰을 입력하세요.\n이 토큰은 이번 한 번만 표시됩니다. 이 창을 닫으면 다시 볼 수 없습니다.",
+        ["srv.token.port"] = "수신 포트:",
+        ["srv.token.label"] = "admin 토큰:",
+        ["srv.token.copy"] = "클립보드로 복사",
+        ["srv.token.copied"] = "복사됨!",
+
+        // ---- TCP: 서버 읽기전용 메타데이터 창 ----
+        ["srv.list.title"] = "등록된 클라이언트 (읽기 전용)",
+        ["srv.list.note"] = "서버에는 마스터 암호가 없어 키 이름이나 값을 볼 수 없습니다. 클라이언트(봉투) 이름과 마지막 갱신 시각만 표시됩니다.",
+        ["srv.list.vaultPresent"] = "마스터 금고: 보관됨",
+        ["srv.list.vaultAbsent"] = "마스터 금고: 아직 없음",
+        ["srv.list.envCount"] = "등록된 클라이언트(봉투): {0}개",
+        ["srv.list.colClient"] = "클라이언트",
+        ["srv.list.colUpdated"] = "마지막 갱신",
+        ["srv.list.empty"] = "아직 등록된 클라이언트가 없습니다.",
+        ["srv.list.refresh"] = "새로 고침",
+
+        // ---- TCP: 마스터 GUI 접속 설정 ----
+        ["mg.setup.title"] = "서버 접속",
+        ["mg.setup.info"] = "KeyManager 서버 주소와, 서버 최초 실행 시 1회 표시된 admin 토큰을 입력하세요.",
+        ["mg.setup.host"] = "호스트:",
+        ["mg.setup.port"] = "포트:",
+        ["mg.setup.token"] = "admin 토큰:",
+        ["mg.setup.errHost"] = "호스트를 입력하세요.",
+        ["mg.setup.errPort"] = "올바른 포트(1-65535)를 입력하세요.",
+        ["mg.setup.errToken"] = "올바른 admin 토큰(base64)을 붙여넣으세요.",
+
+        // ---- TCP: 마스터 GUI 흐름 / push 상태 ----
+        ["mg.title"] = "KeyManager 마스터",
+        ["mg.connecting"] = "서버에 접속 중...",
+        ["mg.connectError"] = "서버에 연결할 수 없습니다: {0}",
+        ["mg.firstSetup"] = "서버에 아직 금고가 없습니다. 마스터 암호를 생성해 초기 설정을 진행하세요.",
+        ["mg.pushError"] = "서버 동기화에 실패했습니다: {0}\n변경 내용은 로컬에 유지되며, 다음 편집 또는 종료 시 다시 시도합니다.",
+        ["mg.closePushError"] = "종료 전 일부 변경 내용을 서버에 동기화하지 못했습니다: {0}",
+        ["mg.importPrompt"] = "기존 로컬 금고(1단계 Named Pipe 앱)를 발견했습니다:\n{0}\n\n이 금고를 서버로 가져올까요? 기존 마스터 암호로 잠금을 해제합니다.\n(원본 파일은 그대로 보존됩니다.)",
+        ["mg.importDone"] = "기존 금고를 서버로 가져왔습니다.",
     };
 }

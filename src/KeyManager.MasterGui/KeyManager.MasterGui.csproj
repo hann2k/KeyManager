@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- Kd 보유·편집·봉투 생성을 위해 Core 참조. -->
+    <ProjectReference Include="..\KeyManager.Core\KeyManager.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 관리 폼을 App에서 링크 재사용(중복 로직 금지). namespace는 KeyManager.App 유지 →
+         MasterGui 코드에서 `using KeyManager.App;`. AppPaths/AppSettings는 App 전용 경로/설정이라
+         링크하지 않고, MasterGui는 자체 MasterSettings(%APPDATA%\KeyManager\master-gui.json)를 쓴다. -->
+    <Compile Include="..\KeyManager.App\Loc.cs" Link="Shared\Loc.cs" />
+    <Compile Include="..\KeyManager.App\MainForm.cs" Link="Shared\MainForm.cs" />
+    <Compile Include="..\KeyManager.App\Dialogs.cs" Link="Shared\Dialogs.cs" />
+    <Compile Include="..\KeyManager.App\MasterPasswordForm.cs" Link="Shared\MasterPasswordForm.cs" />
+    <Compile Include="..\KeyManager.App\ChangeMasterPasswordForm.cs" Link="Shared\ChangeMasterPasswordForm.cs" />
+    <Compile Include="..\KeyManager.App\DescriptionForm.cs" Link="Shared\DescriptionForm.cs" />
+    <Compile Include="..\KeyManager.App\LanguageSelectForm.cs" Link="Shared\LanguageSelectForm.cs" />
+    <Compile Include="..\KeyManager.App\KeyTreeBuilder.cs" Link="Shared\KeyTreeBuilder.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+</Project>

@@ -3,11 +3,18 @@ using System.Text;
 using System.Text.Json;
 using KeyManager.Core.Crypto;
 using KeyManager.Core.Model;
+using KeyManager.Protocol;
 
 namespace KeyManager.Core;
 
 /// <summary>브로커가 쓰는 소비 앱의 복호화된 뷰.</summary>
 public sealed record ClientView(string Name, byte[] Seed, HashSet<string> AllowedKeys, string? BoundProcessPath);
+
+/// <summary>
+/// TCP 버전 서버 push 페이로드(설계 §6). 마스터 금고 JSON(Kd 암호 그대로) + 소비앱별 봉투.
+/// 값 복호화(Kd)는 여기서 하고 봉투는 소비앱 S로 재봉인한다.
+/// </summary>
+public sealed record ServerPushData(string MasterVaultJson, IReadOnlyList<EnvelopeRecord> Envelopes);
 
 /// <summary>
 /// 암호화 vault의 중심. Kd는 unlock~lock 동안만 상주하고 유휴 시 자동 소거(설계 §8).
@@ -516,6 +523,68 @@ public sealed class VaultStore : IDisposable
         }
         client = null;
         return false;
+    }
+
+    // ---- TCP 버전: 서버 push 페이로드 생성 -------------------------------
+
+    /// <summary>
+    /// 서버로 push할 페이로드를 만든다(설계 §6, C1 봉투). unlock 상태 필요.
+    /// 각 소비 앱마다:
+    ///   1) S·allowedKeys(grants)를 Kd로 복호화.
+    ///   2) 모든 시크릿 이름 순회 → KeyAccess.IsAllowed면 값 복호화해 Entries[name]=value.
+    ///   3) envKey = HMAC(S, "env")로 EnvelopeContent JSON을 AES-GCM 봉인 → EnvelopeRecord.
+    /// MasterVaultJson = 현재 Kd 암호 금고(VaultFile) JSON 그대로(SaveFile과 동일 직렬화 옵션).
+    /// 봉투에는 이미 허용된 것만 들어가므로 서버는 권한을 몰라도 된다.
+    /// </summary>
+    public ServerPushData BuildServerPush()
+    {
+        lock (_gate)
+        {
+            byte[] kd = RequireUnlocked();
+            Touch();
+
+            // 시크릿 이름 → 레코드(복호화 캐시 활용). 이름은 unlock 시 이미 인덱싱됨.
+            var envelopes = new List<EnvelopeRecord>(_clientsByName!.Count);
+            string nowIso = DateTimeOffset.UtcNow.ToString("O");
+
+            foreach (var (clientName, crec) in _clientsByName)
+            {
+                byte[] seed = AeadBox.Open(kd, crec.Seed);
+                try
+                {
+                    string allowedJson = AeadBox.OpenString(kd, crec.AllowedKeys);
+                    string[] grants = JsonSerializer.Deserialize<string[]>(allowedJson) ?? [];
+
+                    var entries = new Dictionary<string, string>(StringComparer.Ordinal);
+                    foreach (var (name, erec) in _entriesByName!)
+                    {
+                        if (!KeyAccess.IsAllowed(grants, name)) continue;
+                        entries[name] = AeadBox.OpenString(kd, erec.Value);
+                    }
+
+                    byte[] envKey = TransportCrypto.DeriveEnvelopeKey(seed);
+                    try
+                    {
+                        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(new EnvelopeContent { Entries = entries });
+                        var (iv, tag, ct) = TransportCrypto.Seal(envKey, plaintext);
+                        envelopes.Add(new EnvelopeRecord
+                        {
+                            Client = clientName,
+                            Iv = Convert.ToBase64String(iv),
+                            Tag = Convert.ToBase64String(tag),
+                            Ct = Convert.ToBase64String(ct),
+                            UpdatedAt = nowIso,
+                        });
+                    }
+                    finally { CryptographicOperations.ZeroMemory(envKey); }
+                }
+                finally { CryptographicOperations.ZeroMemory(seed); }
+            }
+
+            // 마스터 금고는 Kd 암호 상태 그대로(서버는 못 엶). SaveFile과 동일 직렬화 옵션.
+            string masterVaultJson = JsonSerializer.Serialize(_file, FileJson);
+            return new ServerPushData(masterVaultJson, envelopes);
+        }
     }
 
     // ---- 저장 -----------------------------------------------------------

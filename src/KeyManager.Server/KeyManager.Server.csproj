@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- 서버는 Protocol만 참조 — Core(VaultStore/Kd)를 참조하지 않아
+         "서버는 마스터키를 못 만진다"를 프로젝트 레벨에서 강제한다(zero-knowledge). -->
+    <ProjectReference Include="..\KeyManager.Protocol\KeyManager.Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 다국어 문자열 테이블만 App에서 링크(중복 방지). Loc는 Core/Protocol 의존이 없어
+         서버의 zero-knowledge 제약을 깨지 않는다. namespace는 KeyManager.App 유지. -->
+    <Compile Include="..\KeyManager.App\Loc.cs" Link="Shared\Loc.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+</Project>

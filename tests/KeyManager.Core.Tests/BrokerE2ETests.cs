@@ -1,9 +1,8 @@
-using KeyManager.Client;
 using KeyManager.Core;
 
 namespace KeyManager.Core.Tests;
 
-/// <summary>실제 Named Pipe + Client SDK로 end-to-end 검증.</summary>
+/// <summary>실제 Named Pipe 브로커를 테스트 클라이언트로 end-to-end 검증(1단계 유지).</summary>
 public class BrokerE2ETests : IAsyncLifetime
 {
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"km-e2e-{Guid.NewGuid():n}.json");
@@ -35,7 +34,7 @@ public class BrokerE2ETests : IAsyncLifetime
     [Fact]
     public async Task Get_ReturnsDecryptedValue()
     {
-        var client = new KeyManagerClient("app1", _seed, _pipe);
+        var client = new PipeTestClient("app1", _seed, _pipe);
         string value = await client.GetAsync("openai");
         Assert.Equal("sk-secret-123", value);
     }
@@ -43,7 +42,7 @@ public class BrokerE2ETests : IAsyncLifetime
     [Fact]
     public async Task List_ReturnsOnlyAllowedAndExisting()
     {
-        var client = new KeyManagerClient("app1", _seed, _pipe);
+        var client = new PipeTestClient("app1", _seed, _pipe);
         var keys = await client.ListAsync();
         Assert.Equal(new[] { "openai" }, keys); // github은 권한 없어 제외
     }
@@ -51,23 +50,23 @@ public class BrokerE2ETests : IAsyncLifetime
     [Fact]
     public async Task Get_UnauthorizedKey_Rejected()
     {
-        var client = new KeyManagerClient("app1", _seed, _pipe);
-        await Assert.ThrowsAsync<KeyManagerException>(() => client.GetAsync("github"));
+        var client = new PipeTestClient("app1", _seed, _pipe);
+        await Assert.ThrowsAsync<PipeTestException>(() => client.GetAsync("github"));
     }
 
     [Fact]
     public async Task Get_WrongSeed_Rejected()
     {
         byte[] wrongSeed = new byte[32]; // 전부 0 — 잘못된 시드
-        var client = new KeyManagerClient("app1", wrongSeed, _pipe);
-        await Assert.ThrowsAsync<KeyManagerException>(() => client.GetAsync("openai"));
+        var client = new PipeTestClient("app1", wrongSeed, _pipe);
+        await Assert.ThrowsAsync<PipeTestException>(() => client.GetAsync("openai"));
     }
 
     [Fact]
     public async Task Get_UnknownClient_Rejected()
     {
-        var client = new KeyManagerClient("ghost", _seed, _pipe);
-        await Assert.ThrowsAsync<KeyManagerException>(() => client.GetAsync("openai"));
+        var client = new PipeTestClient("ghost", _seed, _pipe);
+        await Assert.ThrowsAsync<PipeTestException>(() => client.GetAsync("openai"));
     }
 
     [Fact]
@@ -76,8 +75,8 @@ public class BrokerE2ETests : IAsyncLifetime
         _store.Lock();
         try
         {
-            var client = new KeyManagerClient("app1", _seed, _pipe);
-            await Assert.ThrowsAsync<KeyManagerException>(() => client.GetAsync("openai"));
+            var client = new PipeTestClient("app1", _seed, _pipe);
+            await Assert.ThrowsAsync<PipeTestException>(() => client.GetAsync("openai"));
         }
         finally
         {

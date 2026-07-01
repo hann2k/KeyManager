@@ -1,4 +1,3 @@
-using KeyManager.Client;
 using KeyManager.Core;
 
 namespace KeyManager.Core.Tests;
@@ -54,13 +53,13 @@ public class GroupE2ETests : IAsyncLifetime
         try { File.Delete(_path); } catch { }
     }
 
-    private KeyManagerClient Client(string name) =>
+    private PipeTestClient Client(string name) =>
         new(name, GetSeed(name), _pipe);
 
     private readonly Dictionary<string, byte[]> _seeds = new();
     private byte[] GetSeed(string name) => _seeds[name];
 
-    private KeyManagerClient Register(string name, params string[] grants)
+    private PipeTestClient Register(string name, params string[] grants)
     {
         _seeds[name] = _store.AddClient(name, grants);
         return Client(name);
@@ -108,6 +107,6 @@ public class GroupE2ETests : IAsyncLifetime
         Assert.Equal(4, g.Count);
         Assert.All(g.Keys, k => Assert.StartsWith("LsOpenApi:Simulation:", k));
         // 상위 키 단일 조회는 거부
-        await Assert.ThrowsAsync<KeyManagerException>(() => km.GetAsync("LsOpenApi:AppKey"));
+        await Assert.ThrowsAsync<PipeTestException>(() => km.GetAsync("LsOpenApi:AppKey"));
     }
 }

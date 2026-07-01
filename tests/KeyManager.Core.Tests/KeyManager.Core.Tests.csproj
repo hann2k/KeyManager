@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\KeyManager.Core\KeyManager.Core.csproj" />
     <ProjectReference Include="..\..\src\KeyManager.Client\KeyManager.Client.csproj" />
     <ProjectReference Include="..\..\src\KeyManager.Protocol\KeyManager.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\KeyManager.Server\KeyManager.Server.csproj" />
   </ItemGroup>
 
 </Project>

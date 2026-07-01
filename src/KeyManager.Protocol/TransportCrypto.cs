@@ -34,6 +34,17 @@ public static class TransportCrypto
         return HMACSHA256.HashData(seed, message); // 32바이트 = AES-256 키
     }
 
+    /// <summary>
+    /// 봉투(envelope) 봉인/해제 키(AES-256, 설계 §3). nonce 무관 → 안정적이라
+    /// push 때 마스터 GUI가 봉인하고 소비 앱이 언제든 fetch해 열 수 있다.
+    /// envKey = HMAC(S, "env").
+    /// </summary>
+    public static byte[] DeriveEnvelopeKey(byte[] seed)
+    {
+        byte[] message = BuildCanonical(ProtocolConstants.EnvLabel);
+        return HMACSHA256.HashData(seed, message); // 32바이트 = AES-256 키
+    }
+
     /// <summary>sessionKey로 평문을 AES-256-GCM 암호화. (iv, tag, ciphertext) 반환.</summary>
     public static (byte[] Iv, byte[] Tag, byte[] Ciphertext) Seal(byte[] sessionKey, byte[] plaintext)
     {
