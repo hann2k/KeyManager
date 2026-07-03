@@ -9,3 +9,8 @@
 # Visual Studio 사용자 설정
 .vs/
 *.user
+
+# Python (sdk/python)
+__pycache__/
+*.pyc
+*.egg-info/
