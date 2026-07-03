@@ -136,6 +136,10 @@ internal static class Loc
         ["srv.tipListening"] = "KeyManager Server — listening on port {0}",
         ["srv.startError"] = "Failed to start the server: {0}",
         ["srv.alreadyRunning"] = "KeyManager Server is already running.",
+        ["srv.status.running"] = "KeyManager Server — running (port {0})",
+        ["srv.status.stopped"] = "KeyManager Server — stopped",
+        ["srv.tray.serverExeMissing"] = "Server executable not found next to the tray app:\n{0}\nStart the server separately, or reinstall so both files are in the same folder.",
+        ["srv.list.notRunning"] = "The server is not running yet (no data).",
 
         // ---- TCP: Admin token one-time reveal ----
         ["srv.token.title"] = "Admin token (shown once)",
@@ -277,6 +281,10 @@ internal static class Loc
         ["srv.tipListening"] = "KeyManager 서버 — 포트 {0} 수신 중",
         ["srv.startError"] = "서버를 시작하지 못했습니다: {0}",
         ["srv.alreadyRunning"] = "KeyManager 서버가 이미 실행 중입니다.",
+        ["srv.status.running"] = "KeyManager 서버 — 실행 중 (포트 {0})",
+        ["srv.status.stopped"] = "KeyManager 서버 — 중지됨",
+        ["srv.tray.serverExeMissing"] = "트레이 앱 옆에서 서버 실행 파일을 찾을 수 없습니다:\n{0}\n서버를 따로 실행하거나, 두 파일이 같은 폴더에 있도록 다시 설치하세요.",
+        ["srv.list.notRunning"] = "서버가 아직 실행되지 않았습니다 (데이터 없음).",
 
         // ---- TCP: admin 토큰 1회 표시 ----
         ["srv.token.title"] = "admin 토큰 (1회만 표시)",

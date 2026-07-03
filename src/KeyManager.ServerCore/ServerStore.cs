@@ -64,6 +64,24 @@ public sealed class ServerStore
         return created;
     }
 
+    /// <summary>
+    /// 이미 존재하는 저장 파일만 읽어 온다(없으면 null). 트레이 동반앱이 <b>스토어를 생성하지 않고</b>
+    /// 읽기전용 메타데이터/토큰만 조회할 때 사용(서버가 스토어를 만들기 전엔 만들지 않음).
+    /// 손상/파싱 실패 시에도 null.
+    /// </summary>
+    public static ServerStore? TryLoad(string? path = null)
+    {
+        path ??= DefaultPath;
+        if (!File.Exists(path)) return null;
+        try
+        {
+            byte[] bytes = File.ReadAllBytes(path);
+            StoreFile? file = JsonSerializer.Deserialize<StoreFile>(bytes, FileJson);
+            return file is null ? null : new ServerStore(path, file);
+        }
+        catch { return null; }
+    }
+
     // ---- admin 토큰 -----------------------------------------------------
 
     /// <summary>admin 토큰 A(32B)를 반환. push/pull authCode 검증에 사용.</summary>

@@ -9,6 +9,8 @@
     <Project Path="src/KeyManager.MasterGui/KeyManager.MasterGui.csproj" />
     <Project Path="src/KeyManager.Protocol/KeyManager.Protocol.csproj" />
     <Project Path="src/KeyManager.Server/KeyManager.Server.csproj" />
+    <Project Path="src/KeyManager.ServerCore/KeyManager.ServerCore.csproj" />
+    <Project Path="src/KeyManager.Tray/KeyManager.Tray.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/KeyManager.Core.Tests/KeyManager.Core.Tests.csproj" />

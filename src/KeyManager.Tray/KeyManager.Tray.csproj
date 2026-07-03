@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- 서버 런타임 코어(ServerStore 읽기전용 메타/토큰, ServerSettings 포트, StopSignal). Protocol은 전이. -->
+    <ProjectReference Include="..\KeyManager.ServerCore\KeyManager.ServerCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 다국어 문자열 테이블만 App에서 링크(중복 방지). namespace는 KeyManager.App 유지. -->
+    <Compile Include="..\KeyManager.App\Loc.cs" Link="Shared\Loc.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- 서버 트레이 동반앱(사용자 세션). 헤드리스 서버를 기동/감시하고 읽기전용 UI를 제공한다.
+         타입은 KeyManager.Server 네임스페이스 유지(이동한 폼들과 일치). -->
+    <RootNamespace>KeyManager.Server</RootNamespace>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+</Project>

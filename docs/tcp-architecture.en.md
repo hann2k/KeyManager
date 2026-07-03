@@ -8,16 +8,22 @@
 
 ---
 
-## 1. Components (3 processes + libraries)
+## 1. Components (processes + libraries)
 
 | Project | Target | Kind | Role |
 |---|---|---|---|
 | `src/KeyManager.Protocol` | net10.0 | lib | Wire messages, framing, transport/envelope crypto (shared by both sides) |
 | `src/KeyManager.Core` | net10.0-windows | lib | `VaultStore`, KDF, AeadBox, **envelope generation**. Used by the Master GUI |
-| `src/KeyManager.Server` | net10.0-windows | **WinExe** | **Resident** TCP/TLS server. Stores & serves the encrypted vault + envelopes. Read-only tray |
+| `src/KeyManager.ServerCore` | net10.0-windows | lib | Server runtime core (`ServerStore`, `TcpVaultServer`, `ServerHost`, `ServerSettings`, `StopSignal`, `VaultServerService`). **References only Protocol → zero-knowledge preserved**. Namespace stays `KeyManager.Server` |
+| `src/KeyManager.Server` | net10.0-windows | **Exe** | **Headless console/service host.** A `BackgroundService` runs the TCP/TLS server on top of the Generic Host (`Microsoft.Extensions.Hosting` + `UseWindowsService()`). Prints the admin token to the console on first run, logs listening status, shuts down gracefully on Ctrl+C / SCM stop. (Not yet installed as a Windows service — host refactor only.) |
+| `src/KeyManager.Tray` | net10.0-windows | **WinExe** | Tray companion app. On startup launches `KeyManager.Server.exe` from the same folder (if not already running), shows the one-time admin-token window on first run, displays live server status. Holds the moved forms `ServerKeyListForm` & `AdminTokenForm`. "Exit" gracefully stops the server via a named event (`StopSignal`) |
 | `src/KeyManager.MasterGui` | net10.0-windows | **WinExe** | **Non-resident** admin GUI. Holds `Kd`, edits, pulls/pushes to the server |
 | `src/KeyManager.Client` | net10.0 | lib | Consumer-app SDK. Fetches the envelope → decrypts with `S` |
 | `samples/KeyManager.SampleClient` | net10.0 | exe | Console consumer-app example |
+
+> **Server-set layout:** `KeyManager.Server.exe` (the host) and `KeyManager.Tray.exe` (the companion UI) are published into the **same output folder**.
+> The tray launches the server from its own folder, and both read `server-settings.json` from `AppContext.BaseDirectory`.
+> (`publish.ps1` places both executables into `release/KeyManager.Server/`.)
 
 `src/KeyManager.App` (the former single Named Pipe app) is **kept as a stage-1 (local) legacy artifact**, but does not participate in the TCP-version flow.
 (The README continues to distinguish stage 1 = Named Pipe, stage 2 = TCP.)
@@ -170,13 +176,17 @@ Pin (fix) the server's self-signed certificate thumbprint on first connect. Reje
 - First-time setup: if the server has no vault (empty pull), **create** the master password, then push. The admin token `A` and server address are stored in `AppSettings` (for MasterGui).
 - Master password change (`ChangeMasterPassword`) is also supported → re-seal everything, then push.
 
-## 9. Server tray (`KeyManager.Server`, resident)
+## 9. Server tray companion (`KeyManager.Tray`, WinExe)
 
-- Resident in the tray. The icon's right-click menu has **exactly 2 items**: **"View key list"**, **"Exit"**.
-- "View key list" = a **read-only list window**. Since the server has no `Kd`, it **cannot see key names**. Display content (default):
+- The tray UI is now a **separate companion process** (`KeyManager.Tray`). The server itself is a headless console/service host (`KeyManager.Server`), which the tray **launches and monitors**.
+  - On startup it launches `KeyManager.Server.exe` from the same folder if it isn't already running. On first run it shows the admin-token window once.
+  - "Exit" **gracefully stops** the server via a named event (`StopSignal`), then exits the tray too.
+  - The tray shows **live server status** (listening / stopped).
+- The icon's right-click menu still has **exactly 2 items** (unchanged): **"View key list"**, **"Exit"**.
+- "View key list" = a **read-only list window** (unchanged). Since the server has no `Kd`, it **cannot see key names**. Display content (default):
   the list of registered **envelope (consumer-app) names**, each envelope's **key count & UpdatedAt**, vault presence / item count / last push time.
   (Showing actual key names would violate zero-knowledge → excluded by default. If required, a manifest approach is a separate decision.)
-- The server process listens on TCP/TLS (default port `9713`) and loads/saves `ServerStore`. There is no unlock concept (no password) → it can serve immediately after boot.
+- The server host process listens on TCP/TLS (default port `9713`) and loads/saves `ServerStore`. There is no unlock concept (no password) → it can serve immediately after boot. Ctrl+C (console), SCM stop, and the tray "Exit" are all graceful-shutdown paths.
 
 ---
 
@@ -198,5 +208,3 @@ public const int    AdminTokenLengthBytes = 32;
 ## 12. Open decisions
 - Server "key list": **metadata only (default)**. If actual key names are wanted, switch to a manifest (accepting the leak).
 - fetchEnvelope read auth: **(1) TLS + envKey confidentiality only (default)**. Strong read auth is a stage-2 option.
-</content>
-</invoke>

@@ -9,7 +9,7 @@ namespace KeyManager.Server;
 /// 환경변수 KM_SERVER_PORT를 설정한 뒤 서버를 재시작한다(환경변수가 파일값보다 우선).
 /// 포트를 바꾸면 소비 앱·마스터 GUI의 접속 포트도 같은 값으로 맞춰야 한다.
 /// </summary>
-internal sealed class ServerSettings
+public sealed class ServerSettings
 {
     public int Port { get; set; } = ProtocolConstants.DefaultTcpPort;
 

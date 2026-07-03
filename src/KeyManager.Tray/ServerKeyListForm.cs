@@ -10,7 +10,9 @@ namespace KeyManager.Server;
 /// </summary>
 internal sealed class ServerKeyListForm : Form
 {
-    private readonly ServerStore _store;
+    // 트레이 동반앱은 서버와 별도 프로세스라, 열 때·새로 고침 때마다 디스크에서 스냅샷을 다시 읽는다
+    // (서버가 push로 갱신한 최신을 반영). 서버 미기동/데이터 없음이면 null.
+    private readonly Func<ServerMetadata?> _metadata;
     private readonly Label _vaultLabel = new() { AutoSize = true, Margin = new Padding(3, 3, 3, 2) };
     private readonly Label _countLabel = new() { AutoSize = true, Margin = new Padding(3, 2, 3, 6) };
     private readonly ListView _grid = new()
@@ -25,9 +27,9 @@ internal sealed class ServerKeyListForm : Form
     private readonly ColumnHeader _colClient = new();
     private readonly ColumnHeader _colUpdated = new();
 
-    public ServerKeyListForm(ServerStore store)
+    public ServerKeyListForm(Func<ServerMetadata?> metadata)
     {
-        _store = store;
+        _metadata = metadata;
         Text = Loc.T("srv.list.title");
         StartPosition = FormStartPosition.CenterScreen;
         AutoScaleMode = AutoScaleMode.Font;
@@ -74,12 +76,24 @@ internal sealed class ServerKeyListForm : Form
 
     private void Reload()
     {
-        ServerMetadata meta = _store.GetMetadata();
-        _vaultLabel.Text = meta.MasterVaultPresent ? Loc.T("srv.list.vaultPresent") : Loc.T("srv.list.vaultAbsent");
-        _countLabel.Text = Loc.T("srv.list.envCount", meta.EnvelopeCount);
+        ServerMetadata? meta = _metadata();
 
         _grid.BeginUpdate();
         _grid.Items.Clear();
+
+        if (meta is null)
+        {
+            // 서버가 아직 스토어를 만들지 않음(미기동/데이터 없음).
+            _vaultLabel.Text = Loc.T("srv.list.vaultAbsent");
+            _countLabel.Text = Loc.T("srv.list.envCount", 0);
+            _grid.Items.Add(new ListViewItem(Loc.T("srv.list.notRunning")) { ForeColor = SystemColors.GrayText });
+            _grid.EndUpdate();
+            return;
+        }
+
+        _vaultLabel.Text = meta.MasterVaultPresent ? Loc.T("srv.list.vaultPresent") : Loc.T("srv.list.vaultAbsent");
+        _countLabel.Text = Loc.T("srv.list.envCount", meta.EnvelopeCount);
+
         foreach (EnvelopeMeta e in meta.Envelopes)
         {
             var item = new ListViewItem(e.Client);

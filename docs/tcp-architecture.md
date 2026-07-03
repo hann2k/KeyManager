@@ -8,16 +8,22 @@
 
 ---
 
-## 1. 컴포넌트 (프로세스 3종 + 라이브러리)
+## 1. 컴포넌트 (프로세스 + 라이브러리)
 
 | 프로젝트 | 타깃 | 종류 | 역할 |
 |---|---|---|---|
 | `src/KeyManager.Protocol` | net10.0 | lib | 와이어 메시지·프레이밍·전송/봉투 암호 (양측 공유) |
 | `src/KeyManager.Core` | net10.0-windows | lib | `VaultStore`·KDF·AeadBox·**봉투 생성**. 마스터 GUI가 사용 |
-| `src/KeyManager.Server` | net10.0-windows | **WinExe** | **상주** TCP/TLS 서버. 암호화 금고+봉투 보관·전달. 읽기전용 트레이 |
+| `src/KeyManager.ServerCore` | net10.0-windows | lib | 서버 런타임 코어(`ServerStore`·`TcpVaultServer`·`ServerHost`·`ServerSettings`·`StopSignal`·`VaultServerService`). **Protocol만 참조 → zero-knowledge 유지**. 네임스페이스는 `KeyManager.Server` |
+| `src/KeyManager.Server` | net10.0-windows | **Exe** | **헤드리스 콘솔/서비스 호스트.** Generic Host(`Microsoft.Extensions.Hosting` + `UseWindowsService()`) 위에서 `BackgroundService`가 TCP/TLS 서버 구동. 최초 실행 시 admin 토큰을 콘솔 출력, 리슨 상태 로깅, Ctrl+C/SCM 정지 시 우아하게 종료. (아직 Windows 서비스로 설치되진 않음 — 호스트 리팩터만) |
+| `src/KeyManager.Tray` | net10.0-windows | **WinExe** | 트레이 동반 앱. 시작 시 같은 폴더의 `KeyManager.Server.exe`를 (미기동이면) 실행, 최초 실행 시 admin 토큰 창 1회 표시, 서버 상태 라이브 표시. 이동된 폼 `ServerKeyListForm`·`AdminTokenForm` 보유. "종료"는 명명 이벤트(`StopSignal`)로 서버를 우아하게 정지 |
 | `src/KeyManager.MasterGui` | net10.0-windows | **WinExe** | **비상주** 관리 GUI. `Kd` 보유, 편집, 서버로 pull/push |
 | `src/KeyManager.Client` | net10.0 | lib | 소비 앱 SDK. 봉투 fetch → `S`로 복호화 |
 | `samples/KeyManager.SampleClient` | net10.0 | exe | 콘솔 소비 앱 예시 |
+
+> **서버 세트 배치:** `KeyManager.Server.exe`(호스트)와 `KeyManager.Tray.exe`(동반 UI)는 **같은 출력 폴더**에 배포한다.
+> 트레이가 자기 폴더에서 서버를 기동하고, 둘 다 `AppContext.BaseDirectory`의 `server-settings.json`을 읽기 때문이다.
+> (`publish.ps1`이 두 실행파일을 `release/KeyManager.Server/`에 함께 넣는다.)
 
 `src/KeyManager.App`(구 Named Pipe 단일 앱)은 **1단계(로컬) 유물로 보존**하되, TCP 버전 흐름에는 참여하지 않는다.
 (README에서 1단계=Named Pipe, 2단계=TCP로 계속 구분.)
@@ -170,13 +176,17 @@ var dict   = await km.GetGroupAsync("LsOpenApi");// Entries 중 InGroup 필터
 - 첫 설정: 서버에 금고가 없으면(빈 pull) 마스터 암호 **생성** 후 push. admin 토큰 `A`·서버 주소는 `AppSettings`(MasterGui용)에 보관.
 - 마스터 암호 변경(`ChangeMasterPassword`)도 지원 → 전체 재봉인 후 push.
 
-## 9. Server 트레이 (`KeyManager.Server`, 상주)
+## 9. Server 트레이 동반 앱 (`KeyManager.Tray`, WinExe)
 
-- 트레이 상주. 아이콘 우클릭 메뉴 **딱 2개**: **"Key 목록 보기"**, **"종료"**.
-- "Key 목록 보기" = **읽기전용 목록 창**. 서버는 `Kd`가 없으므로 **키 이름을 못 본다**. 표시 내용(기본):
+- 트레이 UI는 이제 **별도 동반 프로세스**(`KeyManager.Tray`)다. 서버 본체는 헤드리스 콘솔/서비스 호스트(`KeyManager.Server`)이며, 트레이가 이를 **기동·감시**한다.
+  - 시작 시 같은 폴더의 `KeyManager.Server.exe`가 안 떠 있으면 실행. 최초 실행이면 admin 토큰 창을 1회 표시.
+  - "종료"는 명명 이벤트(`StopSignal`)로 서버를 **우아하게 정지**시킨 뒤 트레이도 종료.
+  - 트레이에 **서버 상태(리슨/정지)**를 라이브로 표시.
+- 아이콘 우클릭 메뉴 **딱 2개**(변경 없음): **"Key 목록 보기"**, **"종료"**.
+- "Key 목록 보기" = **읽기전용 목록 창**(변경 없음). 서버는 `Kd`가 없으므로 **키 이름을 못 본다**. 표시 내용(기본):
   등록된 **봉투(소비앱) 이름 목록**, 각 봉투의 **키 개수·UpdatedAt**, 금고 존재/항목 수·최종 push 시각.
   (실제 키 이름 표시는 zero-knowledge 위반 → 기본 제외. 요구 시 매니페스트 방식 별도 결정.)
-- 서버 프로세스가 TCP/TLS 리슨(기본 포트 `9713`)·`ServerStore` 로드/저장. unlock 개념 없음(암호 불필요) → 부팅 후 바로 서비스 가능.
+- 서버 호스트 프로세스가 TCP/TLS 리슨(기본 포트 `9713`)·`ServerStore` 로드/저장. unlock 개념 없음(암호 불필요) → 부팅 후 바로 서비스 가능. Ctrl+C(콘솔)·SCM 정지·트레이 "종료" 모두 우아한 종료 경로.
 
 ---
 

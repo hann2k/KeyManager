@@ -8,8 +8,10 @@
 ## 완료
 
 - **1단계 — 로컬 Named Pipe 브로커** (`KeyManager.App`). 항목별 AES-256-GCM 금고, Argon2id, §9 프로토콜, 클라이언트 SDK, 트레이 관리 UI, 다국어.
-- **2단계 — TCP/TLS 분리** (`KeyManager.Server` 상주 + `KeyManager.MasterGui` 비상주). C1 봉투 모델(zero-knowledge 서버), 금고/봉투 송수신 3종, TOFU 핀 TLS, admin 토큰 인증, 서버 포트 설정, 기존 로컬 금고 이관.
+- **2단계 — TCP/TLS 분리** (`KeyManager.Server` + `KeyManager.MasterGui` 비상주). C1 봉투 모델(zero-knowledge 서버), 금고/봉투 송수신 3종, TOFU 핀 TLS, admin 토큰 인증, 서버 포트 설정, 기존 로컬 금고 이관.
   - ⚠️ **현재 서버는 loopback(127.0.0.1) 바인딩 = 사실상 로컬 전용.** 원격 접속은 아래 "TCP 개방"에서.
+- **서버 코어 분리 (토대 리팩터, Windows 완료)** — 서버 런타임을 WinForms 껍데기에서 떼어 공유 라이브러리 `KeyManager.ServerCore`(Protocol만 참조 → zero-knowledge 유지)로 이동. `KeyManager.Server`는 **헤드리스 콘솔/서비스 호스트**(Generic Host + `UseWindowsService()`, `BackgroundService`가 TCP/TLS 구동, 최초 실행 시 admin 토큰 콘솔 출력, Ctrl+C/SCM 정지 시 우아한 종료)로 전환. 트레이 UI는 별도 동반 앱 `KeyManager.Tray`로 분리(같은 폴더의 서버 기동·감시, 상태 표시, `StopSignal` 명명 이벤트로 우아한 정지). Server·Tray는 같은 폴더로 배포(`publish.ps1`).
+  - 아직 Windows 서비스로 **설치되진 않음**(호스트 리팩터만). Linux 데몬/컨테이너 호스트는 아래 "다중플랫폼"에서.
 
 ---
 
@@ -60,11 +62,12 @@
 "다중플랫폼"은 세 평면으로 갈리고 답이 각각 다름:
 - **소비앱(데이터 평면): 이미 완료.** `Client`/`Protocol`이 net10.0(portable) → Linux/Mac/컨테이너/WSL에서 이미 fetch 가능.
 - **서버: 헤드리스 크로스플랫폼 호스트.** 스마트홈이면 Pi/NAS/Docker 상시 구동이 핵심 → **웹이 아니라** 서버 코어를 WinForms 껍데기에서 분리해 플랫폼별 호스트(Windows=트레이, Linux=데몬/컨테이너).
+  - ✅ **Windows 토대 완료:** 서버 코어를 `KeyManager.ServerCore` 라이브러리로 떼고, `KeyManager.Server`를 헤드리스 콘솔/서비스 호스트로, 트레이를 별도 동반 앱(`KeyManager.Tray`)으로 분리(위 "완료" 참조). 남은 것: **Linux 데몬/컨테이너 호스트**(`ServerCore`가 아직 net10.0-windows이므로 아래 "토대 리팩터"의 portable화가 선행) + Windows 서비스 설치(`sc.exe`/installer).
 - **관리 UI: 여기서만 "웹"이 거론됨.** 크로스플랫폼 네이티브(**Avalonia / .NET MAUI**)가 `Kd`를 관리자 기기에 두는 보안 모델을 유지하므로 우선. **웹은 모바일/무설치가 꼭 필요할 때만**, 그때도 `Kd` 위치 문제(관리자 로컬이 웹을 서빙하는 변형)를 같이 풀어야 함.
 
-**토대 리팩터(선행):** `KeyManager.Core`가 net10.0-**windows**인 유일한 이유는 1단계 Named Pipe(ACL/PID). Windows 전용 파이프 조각을 1단계 전용 어셈블리로 떼고 **Core를 net10.0(portable)로** → 헤드리스 서버·크로스플랫폼 관리 UI 양쪽이 그 위에 얹힘(UI 선택과 무관).
+**토대 리팩터(선행):** 서버 코어를 WinForms 껍데기에서 분리하는 **1차 토대(server core → `ServerCore` lib + 헤드리스 호스트 + 트레이 동반 앱)는 Windows에서 완료**(위 "완료" 참조). 남은 portable화 과제: `KeyManager.Core`/`KeyManager.ServerCore`가 net10.0-**windows**인 유일한 이유는 1단계 Named Pipe(ACL/PID) 및 WinForms 의존. Windows 전용 조각을 전용 어셈블리로 떼고 **코어를 net10.0(portable)로** → 헤드리스 서버(Linux 데몬/컨테이너)·크로스플랫폼 관리 UI 양쪽이 그 위에 얹힘(UI 선택과 무관).
 
-**우선순위:** ① Core portable화(토대) → ② 헤드리스 크로스플랫폼 서버(스마트홈 최대 이득) → ③ 크로스플랫폼 관리 UI(필요 시, 웹보다 Avalonia/MAUI 우선). **웹 전환은 목적지 선택일 뿐 필수 단계 아님.**
+**우선순위:** ① 코어 portable화(남은 토대) → ② 헤드리스 크로스플랫폼 서버 = Linux 데몬/컨테이너(Windows 헤드리스 호스트는 이미 완료, 스마트홈 최대 이득) → ③ 크로스플랫폼 관리 UI(필요 시, 웹보다 Avalonia/MAUI 우선). **웹 전환은 목적지 선택일 뿐 필수 단계 아님.**
 
 ---
 
